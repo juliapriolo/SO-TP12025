@@ -5,7 +5,44 @@
 #include "reader_shm.h"
 
 
-//Cuantas filas imprimir:
+int main(int argc, char** argv) {
+    ReaderConfig cfg;
+    reader_default_config(&cfg); // valores por defecto
+
+    // Parseo simple de CLI: -r <rows>
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-r") == 0) {
+            if (i + 1 >= argc || sscanf(argv[i+1], "%" SCNu16, &cfg.preview_rows) != 1) {
+                fprintf(stderr, "Error en -r (filas a imprimir)\n");
+                return EXIT_FAILURE;
+            }
+            i++;
+        } else {
+            fprintf(stderr, "Flag desconocida: %s\n", argv[i]);
+            return EXIT_FAILURE;
+        }
+    }
+
+    int fd = -1;
+    size_t total_size = 0;
+    const GameState* st = shm_state_open_ro(&fd, &total_size);
+    if (!st) {
+        perror("shm_state_open_ro");
+        return EXIT_FAILURE;
+    }
+
+    reader_print_state_summary(st);
+    reader_print_board_rows(st, cfg.preview_rows);
+
+    if (shm_state_close(st, total_size, fd) == -1) {
+        perror("shm_state_close");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+//Cuantas filas imprimiria
 static inline uint16_t clamp_rows(const GameState* st, uint16_t rows) {
     if (!st) return 0;
     return (rows > st->height) ? st->height : rows;
@@ -77,7 +114,7 @@ void reader_print_board_rows(const GameState* st, uint16_t rows) {
             int32_t v = st->board[y * st->width + x];
             char tok[4];
             cell_to_str(v, tok);
-            printf("%2s ", tok);
+            printf("%3s ", tok);
         }
         printf("\n");
     }

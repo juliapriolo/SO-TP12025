@@ -2,8 +2,49 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "ipc.h"
 #include "writer_shm.h"
+#include "shm.h"
+
+int main(int argc, char** argv) {
+    WriterConfig cfg;
+    if (writer_parse_args(argc, argv, &cfg) != 0) {
+        return EXIT_FAILURE; // Error en argumentos
+    }
+
+    size_t total_bytes = sizeof(GameState)
+                    + (size_t)cfg.width * (size_t)cfg.height * sizeof(int32_t);
+
+    int fd = shm_create_fd(SHM_STATE_NAME, total_bytes, 0600);
+    if (fd == -1) {
+        perror("shm_create_fd");
+        return EXIT_FAILURE;
+    }
+    GameState* st = (GameState*)shm_map(fd, total_bytes, PROT_READ | PROT_WRITE);
+    if (st == MAP_FAILED) {
+        perror("shm_map");
+        close(fd); // en error, cerrar el fd abierto
+        shm_unlink_safe(SHM_STATE_NAME);
+        return EXIT_FAILURE;
+    }
+
+    // Inicializa el header del GameState
+    writer_init_header(st, cfg.width, cfg.height);
+
+    // Llena el tablero con valores aleatorios
+    writer_fill_board_random(st, cfg.seed);
+
+    // Imprime resumen del estado
+    writer_print_summary(st, total_bytes, 10);
+
+    if (shm_unmap_and_close(st, total_bytes, fd) == -1) {
+        perror("shm_unmap_and_close");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
 
 // Funciones auxiliares:
 static void print_usage(const char* prog) {
@@ -88,6 +129,7 @@ void writer_init_header(GameState* st, uint16_t w, uint16_t h) {
     st->height        = h;
     st->players_count = 0;      // el master la seteará luego
     st->finished      = false;
+    memset(st->players, 0, sizeof st->players);
 }
 
 void writer_fill_board_random(GameState* st, unsigned int seed) {
