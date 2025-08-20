@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "ipc.h"
 #include "reader_shm.h"
+#include "shm.h"
 
 
 int main(int argc, char** argv) {
@@ -52,12 +56,12 @@ static inline uint16_t clamp_rows(const GameState* st, uint16_t rows) {
 static void cell_to_str(int32_t v, char out[4]) {
     if (v > 0) {
         // recompensa 1..9
-        snprintf(out, 4, "%2d", v);
+        snprintf(out, 12, "%2d", v);
     } else if (v <= -1) {
         int owner = -v;                // -1 -> 1, -2 -> 2, etc.
-        snprintf(out, 4, "P%d", owner);
+        snprintf(out, 12, "P%d", owner);
     } else { 
-        snprintf(out, 4, "%2d", v);
+        snprintf(out, 12, "%2d", v);
     }
 }
 
@@ -112,7 +116,7 @@ void reader_print_board_rows(const GameState* st, uint16_t rows) {
         printf("%3u ", (unsigned)y); 
         for (uint16_t x = 0; x < st->width; x++) {
             int32_t v = st->board[y * st->width + x];
-            char tok[4];
+            char tok[12];
             cell_to_str(v, tok);
             printf("%3s ", tok);
         }

@@ -164,7 +164,7 @@ void writer_print_summary(const GameState* st, size_t total_bytes, unsigned int 
     printf("Memoria    : %zu bytes totales\n", total_bytes);
 
     // Muestra algunas celdas para verificar llenado
-    if (W > 0 && H > 0 && st->board) {
+    if (W > 0 && H > 0) {
         printf("Muestreo de %u celdas: ", sample_count);
         unsigned int shown = 0;
         for (uint32_t i = 0; i < W*H && shown < sample_count; i++) {
