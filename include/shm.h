@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <sys/types.h>  // mode_t
 #include <sys/mman.h>   // PROT_READ/WRITE
+#include <fcntl.h>     // shm_open, O_CREAT, O_EXCL, O_RDWR
+#include <unistd.h>    // close, ftruncate, munmap
+#include <sys/stat.h>  // shm_open, mode_t
+#include <stderno.h>  // MAP_FAILED
 
 #include "ipc.h"        // GameState / SyncState, nombres de shm
 
