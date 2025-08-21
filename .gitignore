@@ -56,3 +56,6 @@ dkms.conf
 *.gitignore
 .bash_history
 /bin
+ChompChamps_arm64
+CMakeLists.txt
+/.idea/
