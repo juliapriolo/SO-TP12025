@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     }
     unsigned w = (unsigned)atoi(argv[1]);
     unsigned h = (unsigned)atoi(argv[2]);
-    if (w == 0 || h == 0) { fprintf(stderr, "Width/Height inválidos\n"); return 1; }
+    if (w <= 0 || h <= 0) { fprintf(stderr, "Width/Height inválidos\n"); return 1; }
 
     size_t state_bytes = gamestate_bytes((uint16_t)w, (uint16_t)h);
 

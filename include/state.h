@@ -3,14 +3,13 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
-#include <sys/types.h>
 #include <stdint.h>
 
 typedef struct {
     char name[16];
     unsigned int score;
-    unsigned int valid_moves;
     unsigned int invalid_moves;
+    unsigned int valid_moves;
     unsigned short x, y;
     pid_t pid;
     bool blocked;

@@ -1,8 +1,6 @@
 #ifndef SO_TP12025_SHM_H
 #define SO_TP12025_SHM_H
 
-#include "sync.h"
-
 // Crea una shared memory con nombre y tamaño.
 // Devuelve puntero a la memoria o NULL si falla.
 void* shm_create(const char* name, size_t size, int mode);

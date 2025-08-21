@@ -11,8 +11,8 @@
 
 static void print_board_flat(const GameState* s) {
     printf("Tablero (%ux%u):\n", s->width, s->height);
-    for (unsigned y = 0; y < s->height; ++y) {
-        for (unsigned x = 0; x < s->width; ++x) {
+    for (unsigned int y = 0; y < s->height; ++y) {
+        for (unsigned int x = 0; x < s->width; ++x) {
             int32_t cell = s->board[y * s->width + x];
             printf("%2d ", cell);
         }
@@ -22,7 +22,7 @@ static void print_board_flat(const GameState* s) {
 
 static void print_players(const GameState* s) {
     printf("Jugadores (%u):\n", s->player_count);
-    for (unsigned i = 0; i < s->player_count && i < 9; ++i) {
+    for (unsigned int i = 0; i < s->player_count && i < 9; ++i) {
         const PlayerInfo* p = &s->players[i];
         printf("  [%u] %-16s  score=%u  valid=%u  invalid=%u  pos=(%u,%u)  %s\n",
                i, p->name, p->score, p->valid_moves, p->invalid_moves,
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     unsigned w = (unsigned)atoi(argv[1]);
     unsigned h = (unsigned)atoi(argv[2]);
-    if (w == 0 || h == 0) {
+    if (w <= 0 || h <= 0) {
         fprintf(stderr, "Width/Height inválidos.\n");
         return 1;
     }

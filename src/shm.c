@@ -1,9 +1,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <errno.h>
 #include <stdio.h>
-#include <string.h>
 #include "shm.h"
 
 static int flags_to_prot(int oflags) {
@@ -11,15 +9,20 @@ static int flags_to_prot(int oflags) {
 }
 
 void* shm_create(const char* name, size_t size, int oflags) {
+
+    if (size <= 0) {
+        fprintf(stderr, "Error: Attempt to create a shared memory with an invalid size.\n");
+        return NULL;
+    }
+
     int fd = shm_open(name, oflags | O_CREAT, 0666);
     if (fd == -1) {
-        fprintf(stderr, "shm_open(%s, create, oflags=0x%x) fallo: %s\n",
-                name, oflags, strerror(errno));
+        perror("shm_open");
         return NULL;
     }
 
     if (ftruncate(fd, (off_t)size) == -1) {
-        fprintf(stderr, "ftruncate(%s, %zu) fallo: %s\n", name, size, strerror(errno));
+        perror("ftruncate");
         close(fd);
         return NULL;
     }
@@ -27,7 +30,7 @@ void* shm_create(const char* name, size_t size, int oflags) {
     int prot = flags_to_prot(oflags);
     void* addr = mmap(NULL, size, prot, MAP_SHARED, fd, 0);
     if (addr == MAP_FAILED) {
-        fprintf(stderr, "mmap(%s) fallo: %s\n", name, strerror(errno));
+        perror("mmap");
         close(fd);
         return NULL;
     }
@@ -37,16 +40,21 @@ void* shm_create(const char* name, size_t size, int oflags) {
 }
 
 void* shm_connect(const char* name, size_t size, int oflags) {
+    if (size <= 0) {
+        fprintf(stderr, "Error: Attempt to connect to a shared memory with an invalid size.\n");
+        return NULL;
+    }
+
     int fd = shm_open(name, oflags, 0);
     if (fd == -1) {
-        fprintf(stderr, "shm_open(%s, oflags=0x%x) fallo: %s\n", name, oflags, strerror(errno));
+        perror("shm_open");
         return NULL;
     }
 
     int prot = flags_to_prot(oflags);
     void* addr = mmap(NULL, size, prot, MAP_SHARED, fd, 0);
     if (addr == MAP_FAILED) {
-        fprintf(stderr, "mmap(%s) fallo: %s\n", name, strerror(errno));
+        perror("mmap");
         close(fd);
         return NULL;
     }
@@ -56,9 +64,32 @@ void* shm_connect(const char* name, size_t size, int oflags) {
 }
 
 int shm_unmap(void* addr, size_t size) {
-    return munmap(addr, size);
+    if (addr == NULL){
+        fprintf(stderr, "Error: Attempt to unmap a NULL address.\n");
+        return -1;
+    }
+    if (size <= 0){
+        fprintf(stderr, "Error: Attempt to unmap invalid size.\n");
+        return -1;
+    }
+
+    if (munmap(addr, size) == -1) {
+        perror("munmap");
+        return -1;
+    }
+    return 0;
 }
 
 int shm_delete(const char* name) {
-    return shm_unlink(name);
+    if (name == NULL || name[0] == '\0') {
+        fprintf(stderr, "Error: Attempt to delete a shared memory with a NULL name.\n");
+        return -1;
+    }
+
+    if (shm_unlink(name) == -1) {
+        perror("shm_unlink");
+        return -1;
+    }
+
+    return 0;
 }
