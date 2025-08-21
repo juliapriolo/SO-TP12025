@@ -61,7 +61,7 @@ dirs:
 	@mkdir -p $(BINDIR) $(OBJDIR)
 
 clean:
-	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player
+	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/*.log
 	@echo "Limpio."
 
 # Ejecuta master con rutas ABS a view/player
@@ -74,3 +74,13 @@ run-master: view player
 # Si hubo residuos en /dev/shm
 clean-shm:
 	-@rm -f /dev/shm/game_state /dev/shm/game_sync 2>/dev/null || true
+
+FORMAT = clang-format
+FORMAT_FLAGS = -i
+
+SRC = $(wildcard src/*.c include/*.h)
+
+format:
+	$(FORMAT) $(FORMAT_FLAGS) $(SRC)
+
+# valgrind   --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes   --trace-children=yes --trace-children-skip=/bin/*,/usr/bin/*   --log-file="$(pwd)/bin/valgrind-%p.log"   ./ChompChamps_arm64 -w 10 -h 10   -v "$(pwd)/bin/view"   -p "$(pwd)/bin/player"
