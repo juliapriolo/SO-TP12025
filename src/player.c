@@ -11,25 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sync_reader.h>
 
-static void enter_reader(GameSync *s) {
-	sem_wait(&s->sem_turnstile); // C
-	sem_post(&s->sem_turnstile);
-
-	sem_wait(&s->sem_reader_mutex); // E
-	if (++s->readers_count == 1) {
-		sem_wait(&s->sem_state); // D
-	}
-	sem_post(&s->sem_reader_mutex); // E
-}
-
-static void leave_reader(GameSync *s) {
-	sem_wait(&s->sem_reader_mutex); // E
-	if (--s->readers_count == 0) {
-		sem_post(&s->sem_state); // D
-	}
-	sem_post(&s->sem_reader_mutex); // E
-}
 
 // Direcciones (0..7): 0=arriba y sentido horario
 static const int dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
@@ -90,10 +73,10 @@ int main(int argc, char *argv[]) {
 
 	// Encontrar mi índice i en players[] comparando pid
 	int self = -1;
-	enter_reader(sync);
+	reader_enter(sync);
 	self = find_self_index(state);
 	bool fin = state->finished;
-	leave_reader(sync);
+	reader_exit(sync);
 	if (self < 0) {
 		fprintf(stderr, "player: no encuentro mi índice en players[].\n");
 		shm_unmap(sync, sizeof(GameSync));
@@ -109,14 +92,14 @@ int main(int argc, char *argv[]) {
 		}
 
 		// Si el juego terminó, no enviar nada
-		enter_reader(sync);
+		reader_enter(sync);
 		fin = state->finished;
 		unsigned short x = state->players[self].x;
 		unsigned short y = state->players[self].y;
 		int dir = -1;
 		if (!fin)
 			dir = pick_direction(state, x, y);
-		leave_reader(sync);
+		reader_exit(sync);
 
 		if (fin)
 			break;

@@ -10,21 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static inline void reader_enter(GameSync* s) {
-    sem_wait(&s->sem_turnstile);
-    sem_post(&s->sem_turnstile);
-    sem_wait(&s->sem_reader_mutex);
-    if (s->readers_count++ == 0)
-        sem_wait(&s->sem_state);
-    sem_post(&s->sem_reader_mutex);
-}
-static inline void reader_exit(GameSync* s) {
-    sem_wait(&s->sem_reader_mutex);
-    if (--s->readers_count == 0)
-        sem_post(&s->sem_state);
-    sem_post(&s->sem_reader_mutex);
-}
+#include <sync_reader.h>
 
 static void print_board_flat(const GameState *s) {
     printf("Tablero (%ux%u):\n", s->width, s->height);
@@ -87,7 +73,7 @@ int main(int argc, char *argv[]) {
         reader_enter(sync);
             print_board_flat(state);
             print_players(state);
-            int done = state->finished ? 1 : 0;   
+            int done = state->finished ? 1 : 0;
         reader_exit(sync);
 
         printf("finished=%s\n", done ? "true" : "false");
