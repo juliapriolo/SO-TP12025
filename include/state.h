@@ -22,7 +22,7 @@ typedef struct {
 	unsigned short height;
 	unsigned int player_count;
 	PlayerInfo players[9];
-	bool finished;
+	volatile bool finished;
 	int board[];
 } GameState;
 

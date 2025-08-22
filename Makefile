@@ -30,11 +30,17 @@ VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
 PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
 
-# Rutas absolutas a los binarios
-VIEW_BIN   := $(abspath $(BINDIR)/view)
-PLAYER_BIN := $(abspath $(BINDIR)/player)
+# Detección de arquitectura para elegir binario del master
+ARCH := $(shell uname -m)
 
-MASTER ?= ./ChompChamps_arm64
+ifeq ($(ARCH),x86_64)
+  MASTER ?= ./ChompChamps_amd64
+else ifeq ($(ARCH),aarch64)
+  MASTER ?= ./ChompChamps_arm64
+else
+  $(error Arquitectura desconocida: $(ARCH). Definí MASTER manualmente)
+endif
+
 W ?= 10
 H ?= 10
 
@@ -53,7 +59,6 @@ $(BINDIR)/view: $(VIEW_OBJ) | dirs
 $(BINDIR)/player: $(PLAYER_OBJ) | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -67,9 +72,9 @@ clean:
 # Ejecuta master con rutas ABS a view/player
 run-master: view player
 	@echo "MASTER=$(MASTER)"
-	@echo "VIEW  =$(VIEW_BIN)"
-	@echo "PLAYER=$(PLAYER_BIN)"
-	$(MASTER) -w $(W) -h $(H) -p $(PLAYER_BIN) -v $(VIEW_BIN)
+	@echo "VIEW  =$(abspath $(BINDIR)/view)"
+	@echo "PLAYER=$(abspath $(BINDIR)/player)"
+	$(MASTER) -w $(W) -h $(H) -p $(abspath $(BINDIR)/player) -v $(abspath $(BINDIR)/view)
 
 # Si hubo residuos en /dev/shm
 clean-shm:
