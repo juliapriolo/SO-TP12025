@@ -30,6 +30,7 @@ static void print_players(const GameState *s) {
         printf("  [%u] %-16s  score=%u  valid=%u  invalid=%u  pos=(%u,%u)  %s\n",
                i, p->name, p->score, p->valid_moves,
                p->invalid_moves, p->x, p->y, p->blocked ? "BLOCKED" : "OK");
+               p->invalid_moves, p->y, p->x, p->blocked ? "BLOCKED" : "OK");
     }
 }
 

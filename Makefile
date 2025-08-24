@@ -43,6 +43,14 @@ endif
 
 W ?= 10
 H ?= 10
+PLAYERS ?= 1   # cantidad de jugadores por defecto
+
+# Rutas absolutas a los binarios
+PLAYER_BIN := $(abspath $(BINDIR)/player)
+VIEW_BIN   := $(abspath $(BINDIR)/view)
+
+# genera: /abs/bin/player /abs/bin/player ... (N veces)
+PLAYER_LIST := $(foreach i,$(shell seq 1 $(PLAYERS)),$(PLAYER_BIN))
 
 .PHONY: all clean dirs view player run-master clean-shm asan
 asan:
@@ -72,9 +80,10 @@ clean:
 # Ejecuta master con rutas ABS a view/player
 run-master: view player
 	@echo "MASTER=$(MASTER)"
-	@echo "VIEW  =$(abspath $(BINDIR)/view)"
-	@echo "PLAYER=$(abspath $(BINDIR)/player)"
-	$(MASTER) -w $(W) -h $(H) -p $(abspath $(BINDIR)/player) -v $(abspath $(BINDIR)/view)
+	@echo "VIEW  =$(VIEW_BIN)"
+	@echo "PLAYERS=$(PLAYERS)"
+	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	$(MASTER) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
 # Si hubo residuos en /dev/shm
 clean-shm:
@@ -87,5 +96,3 @@ SRC = $(wildcard src/*.c include/*.h)
 
 format:
 	$(FORMAT) $(FORMAT_FLAGS) $(SRC)
-
-# valgrind   --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes   --trace-children=yes --trace-children-skip=/bin/*,/usr/bin/*   --log-file="$(pwd)/bin/valgrind-%p.log"   ./ChompChamps_arm64 -w 10 -h 10   -v "$(pwd)/bin/view"   -p "$(pwd)/bin/player"
