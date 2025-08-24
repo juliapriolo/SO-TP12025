@@ -14,7 +14,7 @@
 #include <ncurses.h>
 #include <signal.h>
 
-/* Devuelve el índice del jugador que está en (x,y) o -1 si no hay */
+/* Devuelve el índice del jugador que está en (x,y) o -1 si no hay ninguno */
 static int player_at(const GameState *s, unsigned x, unsigned y) {
     for (unsigned i = 0; i < s->player_count && i < 9; ++i) {
         if (s->players[i].x == x && s->players[i].y == y) return (int)i;
@@ -22,45 +22,11 @@ static int player_at(const GameState *s, unsigned x, unsigned y) {
     return -1;
 }
 
-/* Reglas de ganador:
-   1) mayor score; 2) si empatan: menor valid_moves;
-   3) si empatan: menor invalid_moves; 4) si todos iguales: -1 (empate) */
-static int calcular_ganador(const GameState *s) {
-    if (s->player_count == 0) return -1;
-
-    int best = 0;
-    for (unsigned i = 1; i < s->player_count; ++i) {
-        const PlayerInfo *b = &s->players[best];
-        const PlayerInfo *p = &s->players[i];
-
-        if (p->score > b->score) best = (int)i;
-        else if (p->score == b->score) {
-            if (p->valid_moves < b->valid_moves) best = (int)i;
-            else if (p->valid_moves == b->valid_moves) {
-                if (p->invalid_moves < b->invalid_moves) best = (int)i;
-            }
-        }
-    }
-
-    /* ¿hay otro exactamente igual al best? → empate */
-    const PlayerInfo *g = &s->players[best];
-    for (unsigned i = 0; i < s->player_count; ++i) {
-        if (i == (unsigned)best) continue;
-        const PlayerInfo *p = &s->players[i];
-        if (p->score == g->score &&
-            p->valid_moves == g->valid_moves &&
-            p->invalid_moves == g->invalid_moves) {
-            return -1;
-        }
-    }
-    return best;
-}
-
 static void print_board_flat(const GameState *s, int *out_last_row) {
     int term_rows, term_cols;
     getmaxyx(stdscr, term_rows, term_cols);
 
-    const int cell_w = 5; /* "| %2d " → 5 columnas */
+    const int cell_w = 5; /* "| %2d " por celda → 5 columnas */
     const int cell_h = 2; /* borde + contenido */
     const int board_width  = (int)s->width  * cell_w + 1;
     const int board_height = (int)s->height * cell_h + 1;
@@ -97,17 +63,19 @@ static void print_board_flat(const GameState *s, int *out_last_row) {
         for (unsigned x = 0; x < s->width; ++x) {
             int32_t cell = s->board[y * s->width + x];
 
-            /* Color: jugador (único) o base para celdas normales */
+            /* ¿Hay un jugador parado en esta celda? */
             int pid = player_at(s, x, y);
             if (pid >= 0) {
-                attron(COLOR_PAIR(10 + (pid % 7)));   /* solo color de texto */
+                attron(COLOR_PAIR(10 + (pid % 7)));
+                attron(A_BOLD);
             } else {
-                attron(COLOR_PAIR(2));                /* color base único */
+                attron(COLOR_PAIR(2));   /* ► todas las celdas normales del mismo color */
             }
 
             mvprintw(row, col, " %2d ", cell);
 
             if (pid >= 0) {
+                attroff(A_BOLD);
                 attroff(COLOR_PAIR(10 + (pid % 7)));
             } else {
                 attroff(COLOR_PAIR(2));
@@ -157,9 +125,9 @@ static void print_players(const GameState *s, int board_last_row) {
         attroff(COLOR_PAIR(pair));
 
         if (p->blocked) {
-            attron(COLOR_PAIR(4));
+            attron(COLOR_PAIR(4)); attron(A_BOLD);
             printw("BLOCKED");
-            attroff(COLOR_PAIR(4));
+            attroff(A_BOLD); attroff(COLOR_PAIR(4));
         } else {
             attron(COLOR_PAIR(pair));
             printw("OK");
@@ -226,7 +194,7 @@ int main(int argc, char *argv[]) {
             init_pair(1, COLOR_CYAN,   -1);   /* títulos */
             init_pair(2, COLOR_WHITE,  -1);   /* ► todas las celdas normales */
             init_pair(4, COLOR_RED,    -1);   /* alertas/bloqueado */
-            /* Paleta de jugadores (solo color de texto, sin fondo) */
+            /* Paleta de jugadores (7 colores, se cicla con i%7) */
             init_pair(10, COLOR_CYAN,    -1);
             init_pair(11, COLOR_MAGENTA, -1);
             init_pair(12, COLOR_YELLOW,  -1);
@@ -247,7 +215,6 @@ int main(int argc, char *argv[]) {
         }
 
         int done = 0;
-        int winner_idx = -2; /* -2 = no evaluado, -1 = empate, >=0 índice ganador */
 
         if (!headless) {
             clear();
@@ -260,34 +227,11 @@ int main(int argc, char *argv[]) {
                 print_players(state, last_row);
             }
             done = state->finished ? 1 : 0;
-            if (done) {
-                winner_idx = calcular_ganador(state);
-            }
         reader_exit(sync);
 
         if (!headless) {
-            int footer_row = LINES - 3;
-            if (footer_row < 0) footer_row = 0;
-
-            mvprintw(footer_row++, 0, "==============================================================");
-            mvprintw(footer_row++, 0, "finished=%s", done ? "true" : "false");
-
-            if (done) {
-                if (winner_idx == -1) {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(footer_row++, 0, "Resultado: EMPATE");
-                    attroff(COLOR_PAIR(4));
-                } else if (winner_idx >= 0) {
-                    int pair = 10 + (winner_idx % 7);
-                    const PlayerInfo *winfo = &state->players[winner_idx];
-                    attron(COLOR_PAIR(pair));
-                    mvprintw(footer_row++, 0,
-                             "Ganador: [%d] %s  score=%u  valid=%u  invalid=%u",
-                             winner_idx, winfo->name, winfo->score,
-                             winfo->valid_moves, winfo->invalid_moves);
-                    attroff(COLOR_PAIR(pair));
-                }
-            }
+            mvprintw(LINES - 2, 0, "==============================================================");
+            mvprintw(LINES - 1, 0, "finished=%s", done ? "true" : "false");
             refresh();
         }
 
