@@ -63,7 +63,7 @@ view: $(BINDIR)/view
 player: $(BINDIR)/player
 
 $(BINDIR)/view: $(VIEW_OBJ) | dirs
-	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS) -lncurses
 $(BINDIR)/player: $(PLAYER_OBJ) | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
