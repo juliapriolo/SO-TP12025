@@ -14,73 +14,123 @@
 #include <ncurses.h>
 #include <signal.h>
 
+/* Devuelve el índice del jugador que está en (x,y) o -1 si no hay */
+static int player_at(const GameState *s, unsigned x, unsigned y) {
+    for (unsigned i = 0; i < s->player_count && i < 9; ++i) {
+        if (s->players[i].x == x && s->players[i].y == y) return (int)i;
+    }
+    return -1;
+}
+
+/* Reglas de ganador:
+   1) mayor score; 2) si empatan: menor valid_moves;
+   3) si empatan: menor invalid_moves; 4) si todos iguales: -1 (empate) */
+static int calcular_ganador(const GameState *s) {
+    if (s->player_count == 0) return -1;
+
+    int best = 0;
+    for (unsigned i = 1; i < s->player_count; ++i) {
+        const PlayerInfo *b = &s->players[best];
+        const PlayerInfo *p = &s->players[i];
+
+        if (p->score > b->score) best = (int)i;
+        else if (p->score == b->score) {
+            if (p->valid_moves < b->valid_moves) best = (int)i;
+            else if (p->valid_moves == b->valid_moves) {
+                if (p->invalid_moves < b->invalid_moves) best = (int)i;
+            }
+        }
+    }
+
+    /* ¿hay otro exactamente igual al best? → empate */
+    const PlayerInfo *g = &s->players[best];
+    for (unsigned i = 0; i < s->player_count; ++i) {
+        if (i == (unsigned)best) continue;
+        const PlayerInfo *p = &s->players[i];
+        if (p->score == g->score &&
+            p->valid_moves == g->valid_moves &&
+            p->invalid_moves == g->invalid_moves) {
+            return -1;
+        }
+    }
+    return best;
+}
+
 static void print_board_flat(const GameState *s, int *out_last_row) {
     int term_rows, term_cols;
     getmaxyx(stdscr, term_rows, term_cols);
 
-    int cell_w = 5; // | %2d |
-    int cell_h = 2; // borde + contenido
-    int board_width = (int)s->width * cell_w + 1;
-    int board_height = (int)s->height * cell_h + 1;
+    const int cell_w = 5; /* "| %2d " → 5 columnas */
+    const int cell_h = 2; /* borde + contenido */
+    const int board_width  = (int)s->width  * cell_w + 1;
+    const int board_height = (int)s->height * cell_h + 1;
 
     if (board_width > term_cols || board_height + 4 > term_rows) {
-        mvprintw(2, 2, "Terminal demasiado pequeña (%dx%d).",
-                 term_cols, term_rows);
-        mvprintw(3, 2, "Reduce el tablero (%ux%u) o agranda la ventana.",
-                 s->width, s->height);
+        mvprintw(1, 2, "Terminal demasiado pequeña (%dx%d).", term_cols, term_rows);
+        mvprintw(2, 2, "Reduce el tablero (%ux%u) o agranda la ventana.", s->width, s->height);
         if (out_last_row) *out_last_row = 4;
         return;
     }
 
-    int start_row = 2;
-    int start_col = 0;
+    const int start_row = 1;  /* compacto: arriba */
+    const int start_col = 0;  /* alineado a la izquierda */
 
     attron(A_BOLD);
-    mvprintw(start_row - 1, start_col, " TABLERO (%ux%u) ", s->width, s->height);
+    mvprintw(start_row, start_col, " TABLERO (%ux%u) ", s->width, s->height);
     attroff(A_BOLD);
 
-    int row = start_row;
+    int row = start_row + 1;
 
-    // Línea superior
+    /* Línea superior */
     int col = start_col;
     mvaddch(row, col++, ACS_ULCORNER);
-    for (unsigned int x = 0; x < s->width; ++x) {
+    for (unsigned x = 0; x < s->width; ++x) {
         for (int i = 0; i < 4; i++) mvaddch(row, col++, ACS_HLINE);
-        mvaddch(row, col++, (x == (unsigned int)(s->width - 1)) ? ACS_URCORNER : ACS_TTEE);
+        mvaddch(row, col++, (x == (unsigned)(s->width - 1)) ? ACS_URCORNER : ACS_TTEE);
     }
     row++;
 
-    // Filas con datos
-    for (unsigned int y = 0; y < s->height; ++y) {
+    /* Filas con valores */
+    for (unsigned y = 0; y < s->height; ++y) {
         col = start_col;
         mvaddch(row, col++, ACS_VLINE);
-        for (unsigned int x = 0; x < s->width; ++x) {
+        for (unsigned x = 0; x < s->width; ++x) {
             int32_t cell = s->board[y * s->width + x];
-            if (cell % 2 == 0) attron(COLOR_PAIR(2)); // pares → verde
-            else attron(COLOR_PAIR(3));               // impares → amarillo
+
+            /* Color: jugador (único) o base para celdas normales */
+            int pid = player_at(s, x, y);
+            if (pid >= 0) {
+                attron(COLOR_PAIR(10 + (pid % 7)));   /* solo color de texto */
+            } else {
+                attron(COLOR_PAIR(2));                /* color base único */
+            }
 
             mvprintw(row, col, " %2d ", cell);
 
-            attroff(COLOR_PAIR(2));
-            attroff(COLOR_PAIR(3));
+            if (pid >= 0) {
+                attroff(COLOR_PAIR(10 + (pid % 7)));
+            } else {
+                attroff(COLOR_PAIR(2));
+            }
+
             col += 4;
             mvaddch(row, col++, ACS_VLINE);
         }
         row++;
 
-        // Línea intermedia o inferior
+        /* Línea intermedia o inferior */
         col = start_col;
-    if (y == (unsigned int)(s->height - 1)) {
+    if (y == (unsigned)(s->height - 1)) {
             mvaddch(row, col++, ACS_LLCORNER);
-            for (unsigned int x = 0; x < s->width; ++x) {
+            for (unsigned x = 0; x < s->width; ++x) {
                 for (int i = 0; i < 4; i++) mvaddch(row, col++, ACS_HLINE);
-                mvaddch(row, col++, (x == (unsigned int)(s->width - 1)) ? ACS_LRCORNER : ACS_BTEE);
+                mvaddch(row, col++, (x == (unsigned)(s->width - 1)) ? ACS_LRCORNER : ACS_BTEE);
             }
         } else {
             mvaddch(row, col++, ACS_LTEE);
-            for (unsigned int x = 0; x < s->width; ++x) {
+            for (unsigned x = 0; x < s->width; ++x) {
                 for (int i = 0; i < 4; i++) mvaddch(row, col++, ACS_HLINE);
-                mvaddch(row, col++, (x == (unsigned int)(s->width - 1)) ? ACS_RTEE : ACS_PLUS);
+                mvaddch(row, col++, (x == (unsigned)(s->width - 1)) ? ACS_RTEE : ACS_PLUS);
             }
         }
         row++;
@@ -96,20 +146,26 @@ static void print_players(const GameState *s, int board_last_row) {
     mvprintw(row++, 0, " JUGADORES (%u):", s->player_count);
     attroff(A_BOLD);
 
-    for (unsigned int i = 0; i < s->player_count && i < 9; ++i) {
+    for (unsigned i = 0; i < s->player_count && i < 9; ++i) {
         const PlayerInfo *p = &s->players[i];
+        int pair = 10 + (int)(i % 7); /* 10..16 */
 
-        if (p->blocked) attron(COLOR_PAIR(4)); // bloqueado → rojo
-        else attron(COLOR_PAIR(1));            // normal → cian
+        attron(COLOR_PAIR(pair));
+        mvprintw(row, 0,
+                 "  [%u] %-12s score=%u  valid=%u  invalid=%u  pos=(%u,%u)  ",
+                 i, p->name, p->score, p->valid_moves, p->invalid_moves, p->y, p->x);
+        attroff(COLOR_PAIR(pair));
 
-        mvprintw(row++, 0,
-            "  [%u] %-12s score=%u  valid=%u  invalid=%u  pos=(%u,%u)  %s",
-            i, p->name, p->score, p->valid_moves,
-            p->invalid_moves, p->y, p->x,
-            p->blocked ? "BLOCKED" : "OK");
-
-        attroff(COLOR_PAIR(1));
-        attroff(COLOR_PAIR(4));
+        if (p->blocked) {
+            attron(COLOR_PAIR(4));
+            printw("BLOCKED");
+            attroff(COLOR_PAIR(4));
+        } else {
+            attron(COLOR_PAIR(pair));
+            printw("OK");
+            attroff(COLOR_PAIR(pair));
+        }
+        row++;
     }
 }
 
@@ -151,6 +207,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    /* Inicialización ncurses liberable */
     scr = newterm(NULL, stdout, stdin);
     if (!scr) {
         fprintf(stderr, "Advertencia: no pude inicializar ncurses (TERM/terminfo?). "
@@ -165,10 +222,18 @@ int main(int argc, char *argv[]) {
         if (has_colors()) {
             start_color();
             use_default_colors();
-            init_pair(1, COLOR_CYAN, -1);     // jugadores
-            init_pair(2, COLOR_GREEN, -1);    // números pares
-            init_pair(3, COLOR_YELLOW, -1);   // números impares
-            init_pair(4, COLOR_RED, -1);      // jugadores bloqueados
+            /* Colores base */
+            init_pair(1, COLOR_CYAN,   -1);   /* títulos */
+            init_pair(2, COLOR_WHITE,  -1);   /* ► todas las celdas normales */
+            init_pair(4, COLOR_RED,    -1);   /* alertas/bloqueado */
+            /* Paleta de jugadores (solo color de texto, sin fondo) */
+            init_pair(10, COLOR_CYAN,    -1);
+            init_pair(11, COLOR_MAGENTA, -1);
+            init_pair(12, COLOR_YELLOW,  -1);
+            init_pair(13, COLOR_GREEN,   -1);
+            init_pair(14, COLOR_BLUE,    -1);
+            init_pair(15, COLOR_WHITE,   -1);
+            init_pair(16, COLOR_RED,     -1);
         }
     }
 
@@ -182,6 +247,7 @@ int main(int argc, char *argv[]) {
         }
 
         int done = 0;
+        int winner_idx = -2; /* -2 = no evaluado, -1 = empate, >=0 índice ganador */
 
         if (!headless) {
             clear();
@@ -194,11 +260,34 @@ int main(int argc, char *argv[]) {
                 print_players(state, last_row);
             }
             done = state->finished ? 1 : 0;
+            if (done) {
+                winner_idx = calcular_ganador(state);
+            }
         reader_exit(sync);
 
         if (!headless) {
-            mvprintw(LINES - 2, 0, "==============================================");
-            mvprintw(LINES - 1, 0, "finished=%s", done ? "true" : "false");
+            int footer_row = LINES - 3;
+            if (footer_row < 0) footer_row = 0;
+
+            mvprintw(footer_row++, 0, "==============================================================");
+            mvprintw(footer_row++, 0, "finished=%s", done ? "true" : "false");
+
+            if (done) {
+                if (winner_idx == -1) {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(footer_row++, 0, "Resultado: EMPATE");
+                    attroff(COLOR_PAIR(4));
+                } else if (winner_idx >= 0) {
+                    int pair = 10 + (winner_idx % 7);
+                    const PlayerInfo *winfo = &state->players[winner_idx];
+                    attron(COLOR_PAIR(pair));
+                    mvprintw(footer_row++, 0,
+                             "Ganador: [%d] %s  score=%u  valid=%u  invalid=%u",
+                             winner_idx, winfo->name, winfo->score,
+                             winfo->valid_moves, winfo->invalid_moves);
+                    attroff(COLOR_PAIR(pair));
+                }
+            }
             refresh();
         }
 
