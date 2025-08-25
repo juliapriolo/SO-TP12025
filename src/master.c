@@ -60,8 +60,8 @@ static void initial_positions(unsigned w, unsigned h, unsigned n,
     unsigned count = 0;
     for (int ry = 0; ry < 3 && count < n; ++ry) {
         for (int rx = 0; rx < 3 && count < n; ++rx) {
-            unsigned short x = (unsigned short)((gx[rx] * (w + 1)) / 4);
-            unsigned short y = (unsigned short)((gy[ry] * (h + 1)) / 4);
+            unsigned short x = (unsigned short)(((unsigned)gx[rx] * (unsigned)(w + 1)) / 4);
+            unsigned short y = (unsigned short)(((unsigned)gy[ry] * (unsigned)(h + 1)) / 4);
             if (x >= w) x = (unsigned short)(w - 1);
             if (y >= h) y = (unsigned short)(h - 1);
             xs[count] = x;
@@ -142,7 +142,7 @@ static void parse_args(int argc, char **argv, Args *out) {
                 out->player_count = 0;
                 out->player_paths[out->player_count++] = optarg;
                 while (optind < argc && argv[optind][0] != '-') {
-                    if (out->player_count >= MAX_PLAYERS) die("Demasiados jugadores (max %d).", MAX_PLAYERS);
+                    if (out->player_count >= MAX_PLAYERS) die("Demasiados jugadores. Nuesto (max %d).", MAX_PLAYERS);
                     out->player_paths[out->player_count++] = argv[optind++];
                 }
                 break;
@@ -231,8 +231,10 @@ static pid_t spawn_view(Master *M) {
         char wbuf[32], hbuf[32];
         snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
         snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
-        const char *argvv[] = { M->args.view_path, wbuf, hbuf, NULL };
-        execv(M->args.view_path, (char *const*)argvv);
+    const char *argvv[] = { M->args.view_path, wbuf, hbuf, NULL };
+    char *argvv_nc[4];
+    for (int k = 0; k < 4; ++k) argvv_nc[k] = (char *)argvv[k];
+    execv(M->args.view_path, argvv_nc);
         perror("execv(view)"); _exit(127);
     }
     return pid;
@@ -250,7 +252,7 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
         /* Inicializar jugador en el estado (nombre, pos, etc.) */
         PlayerInfo *p = &M->state->players[i];
         memset(p, 0, sizeof *p);
-        snprintf(p->name, sizeof p->name, "player%u", i);
+    snprintf(p->name, sizeof p->name, "player%u", i % 10000);
         p->score = 0;
         p->valid_moves = 0;
         p->invalid_moves = 0;
@@ -280,7 +282,9 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
             snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
             snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
             const char *argvp[] = { M->args.player_paths[i], wbuf, hbuf, NULL };
-            execv(M->args.player_paths[i], (char *const*)argvp);
+            char *argvp_nc[4];
+            for (int k = 0; k < 4; ++k) argvp_nc[k] = (char *)argvp[k];
+            execv(M->args.player_paths[i], argvp_nc);
             perror("execv(player)"); _exit(127);
         }
         /* Padre: cerrar lado de escritura (lo mantiene para control si quiere) */
