@@ -37,6 +37,8 @@ ifeq ($(ARCH),x86_64)
   MASTER ?= ./ChompChamps_amd64
 else ifeq ($(ARCH),aarch64)
   MASTER ?= ./ChompChamps_arm64
+else ifeq ($(ARCH),arm64)
+  MASTER ?= ./ChompChamps_arm64
 else
   $(error Arquitectura desconocida: $(ARCH). Definí MASTER manualmente)
 endif
