@@ -72,10 +72,12 @@ static void initial_positions(unsigned w, unsigned h, unsigned n,
 }
 
 /* ----------- Helpers de nombre y basename ----------- */
+/*
 static const char *basename_const(const char *path) {
     const char *slash = strrchr(path, '/');
     return slash ? slash + 1 : path;
 }
+*/
 
 /* ----------- Impresión del estado final de procesos ----------- */
 static void print_child_status(pid_t pid, int status, const char *label, const PlayerInfo *pinfo_or_null) {
@@ -208,15 +210,16 @@ typedef struct {
     Child       players[MAX_PLAYERS];
 } Master;
 
-static void close_unused_fds_in_child(const Child *children, unsigned n, int keep_wr) {
+
+//static void close_unused_fds_in_child(const Child *children, unsigned n, int keep_wr) {
     /* Cerrar TODOS los fds de escritura salvo keep_wr (para evitar herencia de pipes) */
-    for (unsigned i = 0; i < n; ++i) {
+    /*for (unsigned i = 0; i < n; ++i) {
         if (children[i].pipe_wr >= 0 && children[i].pipe_wr != keep_wr)
             close(children[i].pipe_wr);
         if (children[i].pipe_rd >= 0)
             close(children[i].pipe_rd);
     }
-}
+}*/
 
 static pid_t spawn_view(Master *M) {
     if (!M->args.view_path) return 0;

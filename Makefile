@@ -29,6 +29,8 @@ VIEW_SRC   := $(SRCDIR)/view.c   $(SRCDIR)/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
 PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
+MASTER_SRC := $(SRCDIR)/master.c $(SRCDIR)/shm.c
+MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
 
 # Detección de arquitectura para elegir binario del master
 ARCH := $(shell uname -m)
@@ -59,14 +61,18 @@ asan:
 	$(MAKE) clean
 	$(MAKE) SAN=1 all
 
-all: dirs view player
+all: dirs view player master
 
 view: $(BINDIR)/view
 player: $(BINDIR)/player
+master: $(BINDIR)/master
+
 
 $(BINDIR)/view: $(VIEW_OBJ) | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS) -lncurses
 $(BINDIR)/player: $(PLAYER_OBJ) | dirs
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+$(BINDIR)/master: $(MASTER_OBJ) | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
