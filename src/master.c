@@ -233,7 +233,7 @@ static pid_t spawn_view(Master *M) {
         snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
     const char *argvv[] = { M->args.view_path, wbuf, hbuf, NULL };
     char *argvv_nc[4];
-    for (int k = 0; k < 4; ++k) argvv_nc[k] = (char *)(uintptr_t)argvv[k];
+    for (int k = 0; k < 4; ++k) argvv_nc[k] = (char *)argvv[k];
     execv(M->args.view_path, argvv_nc);
         perror("execv(view)"); _exit(127);
     }
@@ -283,7 +283,7 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
             snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
             const char *argvp[] = { M->args.player_paths[i], wbuf, hbuf, NULL };
             char *argvp_nc[4];
-            for (int k = 0; k < 4; ++k) argvp_nc[k] = (char *)(uintptr_t)argvp[k];
+            for (int k = 0; k < 4; ++k) argvp_nc[k] = (char *)argvp[k];
             execv(M->args.player_paths[i], argvp_nc);
             perror("execv(player)"); _exit(127);
         }
