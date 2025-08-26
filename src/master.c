@@ -336,11 +336,11 @@ static bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char 
 static void notify_view_and_delay_if_any(Master *M) {
     if (M->view.pid > 0) {
         (void)sem_post(&M->sync->sem_master_to_view);
-        /* esperar a que la vista imprima */
         while (sem_wait(&M->sync->sem_view_to_master) == -1 && errno == EINTR) {}
     }
-    /* dormir -d ms SIEMPRE (aún sin vista) para ritmo estable */
-    if (M->args.delay_ms > 0) sleep_ms(M->args.delay_ms);
+    if (M->args.delay_ms > 0) {
+        sleep_ms(M->args.delay_ms);
+    }
 }
 
 /* ----------- Señalizar a un jugador que puede enviar el próximo movimiento ----------- */
@@ -383,6 +383,8 @@ int main(int argc, char **argv) {
     GameSync *sync = (GameSync *)shm_create("/game_sync", sizeof(GameSync), O_RDWR);
     if (!sync) die("shm_create(/game_sync) failed");
 
+    init_sync(sync, args.player_count);
+
     /* Inicializar estructuras */
     writer_enter(sync);
         memset(state, 0, state_bytes);
@@ -390,13 +392,9 @@ int main(int argc, char **argv) {
         state->height = (unsigned short)args.height;
         state->player_count = args.player_count;
         state->finished = false;
+        init_board(state, args.width, args.height);  // AGREGAR ESTA LÍNEA
     writer_exit(sync);
 
-    init_sync(sync, args.player_count);
-
-    writer_enter(sync);
-        init_board(state, args.width, args.height);
-    writer_exit(sync);
 
     /* Colocar jugadores en posiciones “justas” */
     unsigned short px[MAX_PLAYERS], py[MAX_PLAYERS];
@@ -408,15 +406,10 @@ int main(int argc, char **argv) {
         .view = { .pid = 0, .pipe_rd = -1, .pipe_wr = -1, .path = args.view_path }
     };
 
-    if (args.view_path) {
-        pid_t vpid = spawn_view(&M);
-        M.view.pid = vpid;
+   if (args.view_path) {
+    pid_t vpid = spawn_view(&M);
+    M.view.pid = vpid;
     }
-
-    writer_enter(sync);
-        /* marcar celdas iniciales y seteos de PlayerInfo (parte en spawn) */
-    writer_exit(sync);
-    spawn_players(&M, px, py);
 
     /* Primera notificación a la vista para dibujar estado inicial */
     notify_view_and_delay_if_any(&M);

@@ -4,7 +4,6 @@ WARN     := -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wpointer-arith -Wcas
 OPT      := -O2
 DEFS     := -D_POSIX_C_SOURCE=200809L
 CFLAGS   := $(CSTD) $(WARN) $(OPT) $(DEFS)
-LDLIBS   := -pthread -lrt
 
 LDFLAGS  :=
 LDLIBS   := -pthread -lrt
@@ -32,18 +31,8 @@ PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
 MASTER_SRC := $(SRCDIR)/master.c $(SRCDIR)/shm.c
 MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
 
-# Detección de arquitectura para elegir binario del master
-ARCH := $(shell uname -m)
-
-ifeq ($(ARCH),x86_64)
-  MASTER ?= ./ChompChamps_amd64
-else ifeq ($(ARCH),aarch64)
-  MASTER ?= ./ChompChamps_arm64
-else ifeq ($(ARCH),arm64)
-  MASTER ?= ./ChompChamps_arm64
-else
-  $(error Arquitectura desconocida: $(ARCH). Definí MASTER manualmente)
-endif
+# Binario propio (compilado desde src/master.c)
+MASTER_BIN := $(abspath $(BINDIR)/master)
 
 W ?= 10
 H ?= 10
@@ -56,7 +45,7 @@ VIEW_BIN   := $(abspath $(BINDIR)/view)
 # genera: /abs/bin/player /abs/bin/player ... (N veces)
 PLAYER_LIST := $(foreach i,$(shell seq 1 $(PLAYERS)),$(PLAYER_BIN))
 
-.PHONY: all clean dirs view player run-master clean-shm asan
+.PHONY: all clean dirs view player master run-master master-run clean-shm asan format
 asan:
 	$(MAKE) clean
 	$(MAKE) SAN=1 all
@@ -66,7 +55,6 @@ all: dirs view player master
 view: $(BINDIR)/view
 player: $(BINDIR)/player
 master: $(BINDIR)/master
-
 
 $(BINDIR)/view: $(VIEW_OBJ) | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS) $(LDLIBS) -lncurses
@@ -82,24 +70,22 @@ dirs:
 	@mkdir -p $(BINDIR) $(OBJDIR)
 
 clean:
-	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/*.log
+	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log
 	@echo "Limpio."
 
-# Ejecuta master con rutas ABS a view/player
-run-master: view player
-	@echo "MASTER=$(MASTER)"
+# Ejecuta *nuestro* master con rutas ABS a view/player
+run-master: master view player
+	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
 	@echo "PLAYERS=$(PLAYERS)"
 	@echo "PLAYER_LIST=$(PLAYER_LIST)"
-	$(MASTER) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+	$(MASTER_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
-# Si hubo residuos en /dev/shm
-clean-shm:
-	-@rm -f /dev/shm/game_state /dev/shm/game_sync 2>/dev/null || true
+# Alias conveniente
+master-run: run-master
 
 FORMAT = clang-format
 FORMAT_FLAGS = -i
-
 SRC = $(wildcard src/*.c include/*.h)
 
 format:
