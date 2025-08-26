@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
     writer_exit(sync);
 
 
-    /* Colocar jugadores en posiciones “justas” */
+    /* Colocar jugadores en posiciones "justas" */
     unsigned short px[MAX_PLAYERS], py[MAX_PLAYERS];
     initial_positions(args.width, args.height, args.player_count, px, py);
 
@@ -406,10 +406,13 @@ int main(int argc, char **argv) {
         .view = { .pid = 0, .pipe_rd = -1, .pipe_wr = -1, .path = args.view_path }
     };
 
-   if (args.view_path) {
-    pid_t vpid = spawn_view(&M);
-    M.view.pid = vpid;
+    if (args.view_path) {
+        pid_t vpid = spawn_view(&M);
+        M.view.pid = vpid;
     }
+
+    spawn_players(&M, px, py);  // ✅ Ahora px, py están inicializados
+
 
     /* Primera notificación a la vista para dibujar estado inicial */
     notify_view_and_delay_if_any(&M);
