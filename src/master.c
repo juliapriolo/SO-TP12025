@@ -27,7 +27,7 @@
 
 #define MAX_PLAYERS 9
 
-/* Direcciones 0..7: 0=arriba y sentido horario (igual que player.c) */
+/* direcciones 0..7: 0=arriba y sentido horario (igual que player.c) */
 static const int DX[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 static const int DY[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
 
@@ -50,7 +50,7 @@ static uint64_t now_ms_monotonic(void) {
     return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)ts.tv_nsec / 1000000ULL;
 }
 
-/* ----------- Colocación determinista de jugadores en una grilla 3x3 ----------- */
+/*  colocacion determinista de jugadores en una grilla 3x3  */
 static void initial_positions(unsigned w, unsigned h, unsigned n,
                               unsigned short xs[MAX_PLAYERS],
                               unsigned short ys[MAX_PLAYERS]) {
@@ -71,15 +71,7 @@ static void initial_positions(unsigned w, unsigned h, unsigned n,
     }
 }
 
-/* ----------- Helpers de nombre y basename ----------- */
-/*
-static const char *basename_const(const char *path) {
-    const char *slash = strrchr(path, '/');
-    return slash ? slash + 1 : path;
-}
-*/
-
-/* ----------- Impresión del estado final de procesos ----------- */
+/* impresion del estado final de procesos */
 static void print_child_status(pid_t pid, int status, const char *label, const PlayerInfo *pinfo_or_null) {
     if (WIFEXITED(status)) {
         int code = WEXITSTATUS(status);
@@ -104,7 +96,7 @@ static void print_child_status(pid_t pid, int status, const char *label, const P
     }
 }
 
-/* ----------- Parseo simple de argumentos ----------- */
+/* parseo simple de argumentos */
 typedef struct {
     unsigned width, height;
     long delay_ms;
@@ -138,7 +130,7 @@ static void parse_args(int argc, char **argv, Args *out) {
             case 's': out->seed = (unsigned)strtoul(optarg, NULL, 10); out->seed_set = 1; break;
             case 'v': out->view_path = optarg; break;
             case 'p': {
-                /* Después de -p vienen 1..9 rutas; las tomamos todas las restantes */
+                /* despues de -p vienen 1..9 rutas; las tomamos todas las restantes */
                 out->player_count = 0;
                 out->player_paths[out->player_count++] = optarg;
                 while (optind < argc && argv[optind][0] != '-') {
@@ -156,7 +148,7 @@ static void parse_args(int argc, char **argv, Args *out) {
     if (!out->seed_set) out->seed = (unsigned)time(NULL);
 }
 
-/* ----------- Inicialización de SHM Estado y Sync ----------- */
+/* Inicialización de shm estado y sync */
 static void init_board(GameState *st, unsigned w, unsigned h) {
     for (unsigned y = 0; y < h; ++y) {
         for (unsigned x = 0; x < w; ++x) {
@@ -169,13 +161,13 @@ static void init_board(GameState *st, unsigned w, unsigned h) {
 static void init_sync(GameSync *sync, unsigned n_players) {
     const int pshared = 1;
 
-    /* Handshake máster <-> vista */
+    /* handshake master <-> vista */
     if (sem_init(&sync->sem_master_to_view, pshared, 0) == -1)
         die("sem_init(sem_master_to_view): %s", strerror(errno));
     if (sem_init(&sync->sem_view_to_master, pshared, 0) == -1)
         die("sem_init(sem_view_to_master): %s", strerror(errno));
 
-    /* Lectores-escritores con prioridad al escritor (C, D, E, F) */
+    /* lectores-escritores con prioridad al escritor (C, D, E, F) */
     if (sem_init(&sync->sem_turnstile,    pshared, 1) == -1)  /* C: molinete */
         die("sem_init(sem_turnstile): %s", strerror(errno));
     if (sem_init(&sync->sem_state,        pshared, 1) == -1)  /* D: mutex estado */
@@ -184,7 +176,7 @@ static void init_sync(GameSync *sync, unsigned n_players) {
         die("sem_init(sem_reader_mutex): %s", strerror(errno));
     sync->readers_count = 0;                                  /* F */
 
-    /* G[i]: una “ventana” por jugador. Dejalo en 1 para habilitar el primer envío */
+    /* G[i]: una “ventana” por jugador. dejalo en 1 para habilitar el primer envio */
     for (unsigned i = 0; i < 9; ++i) {
         unsigned init_val = (i < n_players) ? 1u : 0u;
         if (sem_init(&sync->sem_player_can_send[i], pshared, init_val) == -1)
@@ -193,7 +185,7 @@ static void init_sync(GameSync *sync, unsigned n_players) {
 }
 
 
-/* ----------- Proceso de spawn ----------- */
+/* proceso de spawn */
 typedef struct {
     pid_t pid;
     int   pipe_rd;     /* lado de lectura que usa el master */
@@ -209,17 +201,6 @@ typedef struct {
     Child       view;                  /* opcional: pid != 0 si lanzado */
     Child       players[MAX_PLAYERS];
 } Master;
-
-
-//static void close_unused_fds_in_child(const Child *children, unsigned n, int keep_wr) {
-    /* Cerrar TODOS los fds de escritura salvo keep_wr (para evitar herencia de pipes) */
-    /*for (unsigned i = 0; i < n; ++i) {
-        if (children[i].pipe_wr >= 0 && children[i].pipe_wr != keep_wr)
-            close(children[i].pipe_wr);
-        if (children[i].pipe_rd >= 0)
-            close(children[i].pipe_rd);
-    }
-}*/
 
 static pid_t spawn_view(Master *M) {
     if (!M->args.view_path) return 0;
@@ -247,7 +228,7 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
         M->players[i].pipe_wr = pipefd[1];
         M->players[i].path    = M->args.player_paths[i];
 
-        /* Inicializar jugador en el estado (nombre, pos, etc.) */
+        /* inicializar jugador en el estado (nombre, pos, etc) */
         PlayerInfo *p = &M->state->players[i];
         memset(p, 0, sizeof *p);
         snprintf(p->name, sizeof p->name, "player%u", i);
@@ -259,23 +240,23 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
         p->blocked = false;
         p->pid = 0; /* se setea tras fork */
 
-        /* Marcar su celda inicial como capturada por -id (0..8). La celda inicial no otorga puntos. */
+        /* marcar su celda inicial como capturada por -id (0..8). La celda inicial no otorga puntos. */
         int idx = (int)py[i] * (int)M->args.width + (int)px[i];
         M->state->board[idx] = -(int)i;
 
         pid_t pid = fork();
         if (pid < 0) die("fork(player): %s", strerror(errno));
         if (pid == 0) {
-            /* Hijo (jugador): su stdout debe ser el lado de escritura del pipe */
+            /* hijo (jugador): su stdout debe ser el lado de escritura del pipe */
             if (dup2(pipefd[1], STDOUT_FILENO) == -1) { perror("dup2(player)"); _exit(127); }
-            /* Cerrar extremos no usados y NO heredar otros pipes */
+            /* cerrar extremos no usados y no heredar otros pipes */
             for (unsigned k = 0; k < M->args.player_count; ++k) {
                 if (M->players[k].pipe_rd >= 0) close(M->players[k].pipe_rd);
                 if (M->players[k].pipe_wr >= 0 && M->players[k].pipe_wr != pipefd[1]) close(M->players[k].pipe_wr);
             }
             if (M->view.pid > 0) { /* nada especial que cerrar del view */ }
 
-            /* Ejecutar binario del jugador */
+            /* ejecutar binario del jugador */
             char wbuf[32], hbuf[32];
             snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
             snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
@@ -283,28 +264,65 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
             execv(M->args.player_paths[i], (char *const*)argvp);
             perror("execv(player)"); _exit(127);
         }
-        /* Padre: cerrar lado de escritura (lo mantiene para control si quiere) */
+        /* padre: cerrar lado de escritura (lo mantiene para control si quiere) */
         M->players[i].pid = pid;
         M->state->players[i].pid = pid;
-        /* El master NUNCA escribe al jugador; cerramos el WR para poder detectar EOF si el jugador muere */
+        /* el master nunca escribe al jugador; cerramos el WR para poder detectar EOF si el jugador muere */
         close(M->players[i].pipe_wr);
         M->players[i].pipe_wr = -1;
 
-        /* Hacer no bloqueante el read-end para usar select() seguro */
+        /* hacer no bloqueante el read-end para usar select() seguro */
         int flags = fcntl(M->players[i].pipe_rd, F_GETFL, 0);
         (void) fcntl(M->players[i].pipe_rd, F_SETFL, flags | O_NONBLOCK);
     }
 }
 
-/* ----------- Validación y aplicación de movimiento ----------- */
+/* validacion y aplicacion de movimiento */
 static bool cell_in_bounds(unsigned w, unsigned h, int nx, int ny) {
     return nx >= 0 && ny >= 0 && (unsigned)nx < w && (unsigned)ny < h;
 }
 
-/* Retorna true si el movimiento fue válido y modificó el estado */
+/* verifica si un jugador puede hacer algun movimiento valido */
+static bool player_can_move(const GameState *st, unsigned player_idx) {
+    if (player_idx >= st->player_count) return false;
+    
+    unsigned short x = st->players[player_idx].x;
+    unsigned short y = st->players[player_idx].y;
+    
+    /* revisar las 8 direcciones */
+    for (int dir = 0; dir < 8; ++dir) {
+        int nx = (int)x + DX[dir];
+        int ny = (int)y + DY[dir];
+        
+        /* si esta dentro de bounds y la celda esta libre (>0) */
+        if (cell_in_bounds(st->width, st->height, nx, ny)) {
+            int32_t cell = st->board[(unsigned)ny * st->width + (unsigned)nx];
+            if (cell > 0) return true; /* Puede moverse aquí */
+        }
+    }
+    return false; /* no puede moverse a ningun lado */
+}
+
+/* cuenta cuantos jugadores pueden moverse */
+static unsigned count_players_that_can_move(const GameState *st) {
+    unsigned can_move = 0;
+    for (unsigned i = 0; i < st->player_count; ++i) {
+        if (!st->players[i].blocked && player_can_move(st, i)) {
+            can_move++;
+        }
+    }
+    return can_move;
+}
+
+/* retorna true si el movimiento fue valido y modifico el estado */
 static bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char move) {
     if (move > 7) {
         st->players[player_idx].invalid_moves++;
+        
+        /* verificar si el jugador quedo bloqueado despues de un movimiento invalido */
+        if (!player_can_move(st, player_idx)) {
+            st->players[player_idx].blocked = true;
+        }
         return false;
     }
     int dx = DX[move], dy = DY[move];
@@ -314,25 +332,41 @@ static bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char 
 
     if (!cell_in_bounds(st->width, st->height, nx, ny)) {
         st->players[player_idx].invalid_moves++;
+        
+        /* verificar si el jugador quedó bloqueado */
+        if (!player_can_move(st, player_idx)) {
+            st->players[player_idx].blocked = true;
+        }
         return false;
     }
     int32_t *cellp = &st->board[(unsigned)ny * st->width + (unsigned)nx];
     if (*cellp <= 0) {
         /* no libre: ya capturada (<=0) o jugador encima */
         st->players[player_idx].invalid_moves++;
+        
+        /* verificar si el jugador quedó bloqueado */
+        if (!player_can_move(st, player_idx)) {
+            st->players[player_idx].blocked = true;
+        }
         return false;
     }
 
-    /* Válido: sumar recompensa, marcar celda capturada, actualizar pos/counters */
+    /* valido: sumar recompensa, marcar celda capturada, actualizar pos/counters */
     st->players[player_idx].score += (unsigned)*cellp;
     st->players[player_idx].valid_moves++;
     *cellp = -(int)player_idx; /* capturada por este jugador */
     st->players[player_idx].x = (unsigned short)nx;
     st->players[player_idx].y = (unsigned short)ny;
+    
+    /* despues de un movimiento valido, verificar si el jugador quedo bloqueado en su nueva posicion */
+    if (!player_can_move(st, player_idx)) {
+        st->players[player_idx].blocked = true;
+    }
+    
     return true;
 }
 
-/* ----------- Notificar vista si existe ----------- */
+/*  notificar vista si existe  */
 static void notify_view_and_delay_if_any(Master *M) {
     if (M->view.pid > 0) {
         (void)sem_post(&M->sync->sem_master_to_view);
@@ -343,30 +377,99 @@ static void notify_view_and_delay_if_any(Master *M) {
     }
 }
 
-/* ----------- Señalizar a un jugador que puede enviar el próximo movimiento ----------- */
+/*  senializar a un jugador que puede enviar el proximo movimiento  */
 static void allow_next_send(Master *M, unsigned i) {
     (void)sem_post(&M->sync->sem_player_can_send[i]);
 }
 
-/* ----------- Fase de finalización ----------- */
+/*  fase de finalizacion  */
 static void set_finished_and_wake_all(Master *M) {
     writer_enter(M->sync);
         M->state->finished = true;
     writer_exit(M->sync);
 
-    /* Despertar a la vista para que haga el último render */
+    /* despertar a la vista para que haga el ultimo render */
     if (M->view.pid > 0) {
         (void)sem_post(&M->sync->sem_master_to_view);
         while (sem_wait(&M->sync->sem_view_to_master) == -1 && errno == EINTR) {}
     }
 
-    /* Despertar al menos una vez a cada jugador (si alguno está en sem_wait) */
+    /* despertar al menos una vez a cada jugador (si alguno esta en sem_wait) */
     for (unsigned i = 0; i < M->args.player_count; ++i) {
         (void)sem_post(&M->sync->sem_player_can_send[i]);
     }
 }
 
-/* ----------- main ----------- */
+/* comparacion de jugadores para el podio */
+static int compare_players_for_podium(const void *a, const void *b) {
+    const PlayerInfo *pa = (const PlayerInfo *)a;
+    const PlayerInfo *pb = (const PlayerInfo *)b;
+    
+    /* mayor puntaje gana */
+    if (pa->score > pb->score) return -1;  
+    if (pa->score < pb->score) return 1;  
+    
+    /* en caso de empate, menor cantidad de movimientos validos gana */
+    if (pa->valid_moves < pb->valid_moves) return -1;
+    if (pa->valid_moves > pb->valid_moves) return 1;
+    
+    /* Si sigue empate, menor cantidad de movimientos invalidos gana */
+    if (pa->invalid_moves < pb->invalid_moves) return -1;
+    if (pa->invalid_moves > pb->invalid_moves) return 1;
+    
+    return 0;
+}
+
+/* imprime el podio de jugadores */
+static void print_podium(const GameState *state) {
+    PlayerInfo players_copy[MAX_PLAYERS];
+    for (unsigned i = 0; i < state->player_count; ++i) {
+        players_copy[i] = state->players[i];
+    }
+    
+    qsort(players_copy, state->player_count, sizeof(PlayerInfo), compare_players_for_podium);
+    
+    printf("\n");
+    printf("=== PODIO FINAL ===\n");
+    printf("POS  JUGADOR      PUNTAJE  VALIDOS  INVALIDOS\n");
+    printf("==========================================\n");
+    
+    for (unsigned i = 0; i < state->player_count; ++i) {
+        const char *medal = "   ";
+        if (i == 0) medal = "[1]";
+        else if (i == 1) medal = "[2]";
+        else if (i == 2) medal = "[3]";
+        else medal = "   ";
+        
+        printf("%-3s  %-12s %-8u %-8u %-8u\n", 
+            medal,
+            players_copy[i].name,
+            players_copy[i].score,
+            players_copy[i].valid_moves,
+            players_copy[i].invalid_moves);
+    }
+    printf("==========================================\n");
+    
+    /* mostrar criterios de desempate solo si hay empates */
+    bool has_ties = false;
+    for (unsigned i = 0; i < state->player_count - 1; ++i) {
+        if (compare_players_for_podium(&players_copy[i], &players_copy[i + 1]) == 0) {
+            has_ties = true;
+            break;
+        }
+    }
+    
+    if (has_ties) {
+        printf("\nCriterios de desempate:\n");
+        printf("1. Mayor puntaje\n");
+        printf("2. Menor cantidad de movimientos validos (eficiencia)\n");
+        printf("3. Menor cantidad de movimientos invalidos\n");
+        printf("4. Empate si todos los criterios son iguales\n");
+    }
+    
+    printf("\n");
+}
+
 int main(int argc, char **argv) {
     signal(SIGPIPE, SIG_IGN);
 
@@ -375,7 +478,7 @@ int main(int argc, char **argv) {
 
     srand(args.seed);
 
-    /* Crear SHM Estado y Sync */
+    /* crear shm estado y sync */
     size_t state_bytes = gamestate_bytes((uint16_t)args.width, (uint16_t)args.height);
     GameState *state = (GameState *)shm_create("/game_state", state_bytes, O_RDWR);
     if (!state) die("shm_create(/game_state) failed");
@@ -385,22 +488,22 @@ int main(int argc, char **argv) {
 
     init_sync(sync, args.player_count);
 
-    /* Inicializar estructuras */
+    /* inicializar estructuras */
     writer_enter(sync);
         memset(state, 0, state_bytes);
         state->width  = (unsigned short)args.width;
         state->height = (unsigned short)args.height;
         state->player_count = args.player_count;
         state->finished = false;
-        init_board(state, args.width, args.height);  // AGREGAR ESTA LÍNEA
+        init_board(state, args.width, args.height); 
     writer_exit(sync);
 
 
-    /* Colocar jugadores en posiciones "justas" */
+    /* colocar jugadores en posiciones "justas" */
     unsigned short px[MAX_PLAYERS], py[MAX_PLAYERS];
     initial_positions(args.width, args.height, args.player_count, px, py);
 
-    /* Lanzar vista (si hay), luego jugadores */
+    /* lanzar vista (si hay), luego jugadores */
     Master M = {
         .args = args, .state = state, .sync = sync, .state_bytes = state_bytes,
         .view = { .pid = 0, .pipe_rd = -1, .pipe_wr = -1, .path = args.view_path }
@@ -411,21 +514,40 @@ int main(int argc, char **argv) {
         M.view.pid = vpid;
     }
 
-    spawn_players(&M, px, py);  // ✅ Ahora px, py están inicializados
+    spawn_players(&M, px, py); 
+
+    writer_enter(sync);
+        for (unsigned i = 0; i < args.player_count; ++i) {
+            if (!player_can_move(state, i)) {
+                state->players[i].blocked = true;
+            }
+        }
+        
+        /* si todos empiezan bloqueados, terminar inmediatamente */
+        unsigned initial_can_move = count_players_that_can_move(state);
+        if (initial_can_move == 0) {
+            state->finished = true;
+        }
+    writer_exit(sync);
 
 
-    /* Primera notificación a la vista para dibujar estado inicial */
+    /* primera notif a la vista para dibujar estado inicial */
     notify_view_and_delay_if_any(&M);
 
-    /* ---------- Bucle principal: select() + round-robin ---------- */
-    uint64_t last_valid_ms = now_ms_monotonic();
-    unsigned rr_next = 0; /* índice del próximo a intentar atender primero */
+    if (state->finished) {
+        set_finished_and_wake_all(&M);
+        goto game_finished;
+    }
 
-    /* Transformar timeout_s a ms */
+    /*  bucle principal: select() + round-robin  */
+    uint64_t last_valid_ms = now_ms_monotonic();
+    unsigned rr_next = 0; /* indice del proximo a intentar atender primero */
+
+    /* transformar timeout_s a ms */
     const uint64_t timeout_ms = (uint64_t)args.timeout_s * 1000ULL;
 
     for (;;) {
-        /* Armar fd_set con los pipes vivos */
+        /* armar fd_set con los pipes vivos */
         fd_set rfds;
         FD_ZERO(&rfds);
         int maxfd = -1;
@@ -440,18 +562,17 @@ int main(int argc, char **argv) {
             }
         }
 
-        /* Si ya no hay pipes vivos, finalizamos */
+        /* si ya no hay pipes vivos, finalizamos */
         if (alive == 0) {
-            /* Terminó todo: nadie puede enviar más */
+            /* termino todo: nadie puede enviar mas */
             set_finished_and_wake_all(&M);
             break;
         }
 
-        /* Calcular cuánto falta para el timeout relativo a la ÚLTIMA jugada válida */
+        /* calcular cuánto falta para el timeout relativo a la ultima jugada valida */
         uint64_t now = now_ms_monotonic();
         uint64_t elapsed = now - last_valid_ms;
         if (elapsed >= timeout_ms) {
-            /* Timeout: fin del juego */
             set_finished_and_wake_all(&M);
             break;
         }
@@ -472,7 +593,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        /* Política RR: buscamos el primer jugador con FD listo, empezando en rr_next */
+        /* politica RR: buscamos el primer jugador con FD listo, empezando en rr_next */
         bool processed_one = false;
         for (unsigned k = 0; k < args.player_count; ++k) {
             unsigned i = (rr_next + k) % args.player_count;
@@ -480,7 +601,7 @@ int main(int argc, char **argv) {
             if (fd < 0) continue;
             if (!FD_ISSET(fd, &rfds)) continue;
 
-            /* Leer EXACTAMENTE 1 byte si hay; detectar EOF */
+            /* Leer exactamente 1 byte si hay, detectar EOF */
             unsigned char move;
             ssize_t rd = read(fd, &move, 1);
             if (rd == 0) {
@@ -504,55 +625,67 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            /* Tenemos un byte: aplicar movimiento bajo lock de ESCRITOR */
+            /* tenemos un byte: aplicar movimiento bajo lock de escritor */
             bool was_valid;
+            bool all_blocked = false;
             writer_enter(sync);
                 was_valid = apply_move_locked(state, i, move);
+                unsigned players_that_can_move = count_players_that_can_move(state);
+                all_blocked = (players_that_can_move == 0);
             writer_exit(sync);
 
-            /* Notificar a vista SOLO si hubo cambio de estado */
+            /* notificar a vista solo si hubo cambio de estado */
             if (was_valid) {
                 notify_view_and_delay_if_any(&M);
                 last_valid_ms = now_ms_monotonic();
             }
 
-            /* Desbloquear al jugador para que pueda mandar otro movimiento */
+            if (all_blocked) {
+                set_finished_and_wake_all(&M);
+                goto game_finished;
+            }
+
+            /* desbloquear al jugador para que pueda mandar otro movimiento */
             allow_next_send(&M, i);
 
-            /* Avanzar round-robin y salir (una sola solicitud por iteración) */
+            /* avanzar round-robin y salir (una sola solicitud por iteracion) */
             rr_next = (i + 1) % args.player_count;
             processed_one = true;
             break;
         }
 
-        /* Si no procesamos ninguno (p.ej. los listos dieron error/EOF), volvemos al select */
+        /* si no procesamos ninguno (por ej los listos dieron error/EOF), volvemos al select */
         (void)processed_one;
     }
 
-    /* ---------- Esperar a que terminen vista y jugadores; loguear estado ---------- */
-    /* Post extra a la vista por si quedó esperando */
-    if (M.view.pid > 0) (void)sem_post(&M.sync->sem_master_to_view);
+game_finished: 
 
-    /* Espera de hijos + logs */
+    /*  esperar a que terminen vista y jugadores; loguear estado  */
+    /* post extra a la vista por si quedo esperando */
+    if (M.view.pid > 0) (void)sem_post(&M.sync->sem_master_to_view);
+        
+    if (M.view.pid > 0) {
+        int status;
+        while (waitpid(M.view.pid, &status, 0) == -1 && errno == EINTR) {}
+        print_child_status(M.view.pid, status, "view", NULL);
+    }
+
+    printf("Juego terminado! \n");
+    sleep_ms(1000);
+    print_podium(state);
+    
     int status;
-    /* Primero los jugadores, imprimiendo puntaje */
     for (unsigned i = 0; i < args.player_count; ++i) {
         pid_t pid = M.players[i].pid;
         if (pid <= 0) continue;
         while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {}
         print_child_status(pid, status, "player", &state->players[i]);
     }
-    /* Luego la vista (si la hubo) */
-    if (M.view.pid > 0) {
-        while (waitpid(M.view.pid, &status, 0) == -1 && errno == EINTR) {}
-        print_child_status(M.view.pid, status, "view", NULL);
-    }
+    
 
-    /* Limpieza */
+    /* limpia */
     shm_unmap(sync, sizeof(GameSync));
     shm_unmap(state, state_bytes);
-    /* No hacemos shm_unlink para dejar debugging posible; si querés, descomentá:
-       shm_delete("/game_state"); shm_delete("/game_sync"); */
 
     return 0;
 }
