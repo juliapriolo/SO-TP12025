@@ -60,10 +60,10 @@ static void initial_positions(unsigned w, unsigned h, unsigned n,
     unsigned count = 0;
     for (int ry = 0; ry < 3 && count < n; ++ry) {
         for (int rx = 0; rx < 3 && count < n; ++rx) {
-            unsigned short x = (unsigned short)((gx[rx] * (w + 1)) / 4);
-            unsigned short y = (unsigned short)((gy[ry] * (h + 1)) / 4);
-            if (x >= w) x = (unsigned short)(w - 1);
-            if (y >= h) y = (unsigned short)(h - 1);
+            unsigned short x = (unsigned short)(((unsigned)gx[rx] * (w + 1U)) / 4U);
+            unsigned short y = (unsigned short)(((unsigned)gy[ry] * (h + 1U)) / 4U);
+            if (x >= w) x = (unsigned short)(w - 1U);
+            if (y >= h) y = (unsigned short)(h - 1U);
             xs[count] = x;
             ys[count] = y;
             ++count;
@@ -210,10 +210,12 @@ static pid_t spawn_view(Master *M) {
     if (pid == 0) {
         /* hijo: exec view */
         char wbuf[32], hbuf[32];
+        char view_path_copy[256];
         snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
         snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
-        const char *argvv[] = { M->args.view_path, wbuf, hbuf, NULL };
-        execv(M->args.view_path, (char *const*)argvv);
+        snprintf(view_path_copy, sizeof view_path_copy, "%s", M->args.view_path);
+        char *argvv[] = { view_path_copy, wbuf, hbuf, NULL };
+        execv(view_path_copy, argvv);
         perror("execv(view)"); _exit(127);
     }
     return pid;
@@ -231,7 +233,7 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
         /* inicializar jugador en el estado (nombre, pos, etc) */
         PlayerInfo *p = &M->state->players[i];
         memset(p, 0, sizeof *p);
-        snprintf(p->name, sizeof p->name, "player%u", i);
+        snprintf(p->name, sizeof p->name, "user%u", i);
         p->score = 0;
         p->valid_moves = 0;
         p->invalid_moves = 0;
@@ -258,10 +260,12 @@ static void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned sh
 
             /* ejecutar binario del jugador */
             char wbuf[32], hbuf[32];
+            char player_path_copy[256];
             snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
             snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
-            const char *argvp[] = { M->args.player_paths[i], wbuf, hbuf, NULL };
-            execv(M->args.player_paths[i], (char *const*)argvp);
+            snprintf(player_path_copy, sizeof player_path_copy, "%s", M->args.player_paths[i]);
+            char *argvp[] = { player_path_copy, wbuf, hbuf, NULL };
+            execv(player_path_copy, argvp);
             perror("execv(player)"); _exit(127);
         }
         /* padre: cerrar lado de escritura (lo mantiene para control si quiere) */

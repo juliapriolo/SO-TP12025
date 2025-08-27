@@ -122,7 +122,8 @@ static void print_board_flat(const GameState *s, const uint8_t *trail_idx, int *
     if (out_last_row) *out_last_row = row;
 }
 
-static void print_players(const GameState *s, int board_last_row) {
+/* Devuelve la última fila usada (+1). */
+static int print_players(const GameState *s, int board_last_row) {
     int row = board_last_row + 1;
 
     attron(A_BOLD);
@@ -133,10 +134,10 @@ static void print_players(const GameState *s, int board_last_row) {
         const PlayerInfo *p = &s->players[i];
         int pair = player_text_pair(i);
 
+        /* Usar formato compacto para ahorrar espacio vertical */
         attron(COLOR_PAIR(pair));
-        mvprintw(row, 0,
-                 "  [%u] %-12s score=%u  valid=%u  invalid=%u  pos=(%u,%u)  ",
-                 i, p->name, p->score, p->valid_moves, p->invalid_moves, p->y, p->x);
+        mvprintw(row, 0, " [%u] %-8s %3u %2u/%2u (%u,%u) ",
+                 i, p->name, p->score, p->valid_moves, p->invalid_moves, p->x, p->y);
         attroff(COLOR_PAIR(pair));
 
         if (p->blocked) {
@@ -150,6 +151,7 @@ static void print_players(const GameState *s, int board_last_row) {
         }
         row++;
     }
+    return row;   /* última fila utilizada + 1 */
 }
 
 /* Devuelve última fila usada. */
@@ -315,14 +317,15 @@ int main(int argc, char *argv[]) {
             int last_row = 2;
             if (!headless) {
                 print_board_flat(state, trail, &last_row);
-                print_players(state, last_row);
+                last_row = print_players(state, last_row);  /* <- ahora devuelve última fila */
             }
             done = state->finished ? 1 : 0;
         reader_exit(sync);
 
         if (!headless) {
-            mvprintw(LINES - 2, 0, "==============================================================");
-            mvprintw(LINES - 1, 0, "finished=%s (esperando al master)", done ? "true" : "false");
+            /* Footer compacto pero informativo - siempre en la última línea disponible */
+            int footer_row = (last_row < LINES - 1) ? last_row : LINES - 1;
+            mvprintw(footer_row, 0, "=== finished=%s (esperando al master) ===", done ? "true" : "false");
             refresh();
         }
 
