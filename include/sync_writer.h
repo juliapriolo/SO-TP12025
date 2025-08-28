@@ -7,7 +7,8 @@
 
 /* Helper: esperar manejando EINTR */
 static inline void sem_wait_intr(sem_t *s) {
-    while (sem_wait(s) == -1 && errno == EINTR) { /* retry */ }
+	while (sem_wait(s) == -1 && errno == EINTR) { /* retry */
+	}
 }
 
 /*
@@ -19,8 +20,8 @@ static inline void sem_wait_intr(sem_t *s) {
  * puede “colarse” hasta que liberemos en writer_exit().
  */
 static inline void writer_enter(GameSync *sync) {
-    sem_wait_intr(&sync->sem_turnstile); /* C */
-    sem_wait_intr(&sync->sem_state);     /* D */
+	sem_wait_intr(&sync->sem_turnstile); /* C */
+	sem_wait_intr(&sync->sem_state);	 /* D */
 }
 
 /*
@@ -29,8 +30,8 @@ static inline void writer_enter(GameSync *sync) {
  *    a lectores y a otros escritores.
  */
 static inline void writer_exit(GameSync *sync) {
-    sem_post(&sync->sem_state);     /* D */
-    sem_post(&sync->sem_turnstile); /* C */
+	sem_post(&sync->sem_state);		/* D */
+	sem_post(&sync->sem_turnstile); /* C */
 }
 
 #endif /* SO_TP12025_SYNC_WRITER_H */
