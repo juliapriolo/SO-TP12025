@@ -26,7 +26,7 @@ INCLUDES := -I$(INCDIR)
 
 VIEW_SRC   := $(SRCDIR)/view.c $(SRCDIR)/view_utils.c $(SRCDIR)/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
-PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/shm.c
+PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/player_utils.c $(SRCDIR)/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
 MASTER_SRC := $(SRCDIR)/master.c $(SRCDIR)/shm.c
 MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
