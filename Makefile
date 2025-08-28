@@ -46,7 +46,7 @@ VIEW_BIN   := $(abspath $(BINDIR)/view)
 PLAYER_LIST := $(foreach i,$(shell seq 1 $(PLAYERS)),$(PLAYER_BIN))
 
 .PHONY: all clean dirs view player master run-master master-run clean-shm asan format
-asan:
+asan: deps
 	$(MAKE) clean
 	$(MAKE) SAN=1 all
 
@@ -74,7 +74,7 @@ clean:
 	@echo "Limpio."
 
 # Ejecuta *nuestro* master con rutas ABS a view/player
-run-master: master view player
+run-master: deps master view player
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
 	@echo "PLAYERS=$(PLAYERS)"
@@ -90,3 +90,9 @@ SRC = $(wildcard src/*.c include/*.h)
 
 format:
 	$(FORMAT) $(FORMAT_FLAGS) $(SRC)
+
+.PHONY: deps
+
+deps:
+	apt-get update
+	apt-get install -y libncurses5-dev libncursesw5-dev
