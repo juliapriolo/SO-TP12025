@@ -24,7 +24,7 @@ BINDIR   := $(ROOT)/bin
 OBJDIR   := $(ROOT)/.obj
 INCLUDES := -I$(INCDIR)
 
-VIEW_SRC   := $(SRCDIR)/view.c   $(SRCDIR)/shm.c
+VIEW_SRC   := $(SRCDIR)/view.c $(SRCDIR)/view_utils.c $(SRCDIR)/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
 PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
@@ -36,7 +36,7 @@ MASTER_BIN := $(abspath $(BINDIR)/master)
 
 W ?= 10
 H ?= 10
-PLAYERS ?= 1   # cantidad de jugadores por defecto
+PLAYERS ?= 4   # cantidad de jugadores por defecto
 
 # Rutas absolutas a los binarios
 PLAYER_BIN := $(abspath $(BINDIR)/player)
