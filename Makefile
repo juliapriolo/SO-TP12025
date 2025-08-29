@@ -36,7 +36,7 @@ MASTER_BIN := $(abspath $(BINDIR)/master)
 
 W ?= 10
 H ?= 10
-PLAYERS ?= 4   # cantidad de jugadores por defecto
+PLAYERS ?= 9   # cantidad de jugadores por defecto
 
 # Rutas absolutas a los binarios
 PLAYER_BIN := $(abspath $(BINDIR)/player)
