@@ -90,4 +90,7 @@ int compare_players_for_podium(const void *a, const void *b);
 /* imprime el podio de jugadores */
 void print_podium(const GameState *state);
 
+/* limpia recursos: cierra FDs y destruye semáforos */
+void cleanup_master(Master *M);
+
 #endif //SO_TP12025_MASTER_UTILS_H
