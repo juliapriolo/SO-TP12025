@@ -45,7 +45,17 @@ VIEW_BIN   := $(abspath $(BINDIR)/view)
 # genera: /abs/bin/player /abs/bin/player ... (N veces)
 PLAYER_LIST := $(foreach i,$(shell seq 1 $(PLAYERS)),$(PLAYER_BIN))
 
-.PHONY: all clean dirs view player master run-master master-run clean-shm asan format
+# Detectar arquitectura para ChompChamps
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+  CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)
+else ifeq ($(ARCH),aarch64)
+  CHOMPCHAMPS_BIN := $(abspath ChompChamps_arm64)
+else
+  CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  # fallback
+endif
+
+.PHONY: all clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm asan format help
 asan: deps
 	$(MAKE) clean
 	$(MAKE) SAN=1 all
@@ -84,6 +94,29 @@ run-master: deps master view player
 # Alias conveniente
 master-run: run-master
 
+# Ejecuta con ChompChamps según la arquitectura
+run-chompchamps: deps view player
+	@echo "CHOMPCHAMPS=$(CHOMPCHAMPS_BIN)"
+	@echo "VIEW  =$(VIEW_BIN)"
+	@echo "PLAYERS=$(PLAYERS)"
+	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	@echo "Arquitectura detectada: $(ARCH)"
+	$(CHOMPCHAMPS_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+
+# Ejecuta con valgrind usando nuestro master
+run-valgrind: deps master view player
+	@echo "Ejecutando con valgrind..."
+	@echo "MASTER=$(MASTER_BIN)"
+	@echo "VIEW  =$(VIEW_BIN)"
+	@echo "PLAYERS=$(PLAYERS)"
+	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	valgrind --leak-check=full \
+	  --show-leak-kinds=all \
+	  --track-origins=yes \
+	  --track-fds=yes \
+	  --error-exitcode=1 \
+	  $(MASTER_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+
 FORMAT = clang-format
 FORMAT_FLAGS = -i
 SRC = $(wildcard src/*.c include/*.h)
@@ -96,3 +129,24 @@ format:
 deps:
 	apt-get update
 	apt-get install -y libncurses5-dev libncursesw5-dev
+
+# Ayuda - muestra todas las opciones disponibles
+help:
+	@echo "Opciones disponibles:"
+	@echo "  all              - Compilar proyecto sin asan"
+	@echo "  asan             - Compilar proyecto con AddressSanitizer"
+	@echo "  run-master       - Ejecutar con binario master propio"
+	@echo "  run-chompchamps  - Ejecutar con ChompChamps (detecta arquitectura automáticamente)"
+	@echo "  run-valgrind     - Ejecutar con valgrind usando master propio"
+	@echo "  clean            - Limpiar archivos compilados"
+	@echo "  format           - Formatear código con clang-format"
+	@echo ""
+	@echo "Variables configurables:"
+	@echo "  W=10             - Ancho del tablero (default: 10)"
+	@echo "  H=10             - Alto del tablero (default: 10)"
+	@echo "  PLAYERS=9        - Número de jugadores (default: 9)"
+	@echo ""
+	@echo "Ejemplos:"
+	@echo "  make run-master W=15 H=15 PLAYERS=5"
+	@echo "  make run-chompchamps"
+	@echo "  make run-valgrind"
