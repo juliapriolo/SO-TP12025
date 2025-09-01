@@ -89,7 +89,8 @@ int main(int argc, char **argv) {
 
 	if (state->finished) {
 		set_finished_and_wake_all(&M);
-		goto game_finished;
+		finish_game_and_cleanup(&M, state, sync, state_bytes);
+		return 0;
 	}
 
 	/*  bucle principal: select() + round-robin  */
@@ -201,7 +202,8 @@ int main(int argc, char **argv) {
 
 			if (all_blocked) {
 				set_finished_and_wake_all(&M);
-				goto game_finished;
+				finish_game_and_cleanup(&M, state, sync, state_bytes);
+				return 0;
 			}
 
 			/* desbloquear al jugador para que pueda mandar otro movimiento */
@@ -217,39 +219,7 @@ int main(int argc, char **argv) {
 		(void) processed_one;
 	}
 
-game_finished:
-
-	/*  esperar a que terminen vista y jugadores; loguear estado  */
-	/* post extra a la vista por si quedo esperando */
-	if (M.view.pid > 0)
-		(void) sem_post(&M.sync->sem_master_to_view);
-
-	if (M.view.pid > 0) {
-		int status;
-		while (waitpid(M.view.pid, &status, 0) == -1 && errno == EINTR) {
-		}
-		print_child_status(M.view.pid, status, "view", NULL);
-	}
-
-	printf("Juego terminado! \n");
-	sleep_ms(1000);
-	print_podium(state);
-
-	int status;
-	for (unsigned i = 0; i < args.player_count; ++i) {
-		pid_t pid = M.players[i].pid;
-		if (pid <= 0)
-			continue;
-		while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
-		}
-		print_child_status(pid, status, "player", &state->players[i]);
-	}
-
-	cleanup_master(&M);
-
-	/* limpia */
-	shm_unmap(sync, sizeof(GameSync));
-	shm_unmap(state, state_bytes);
-
+	/* Si llegamos aquí, el juego terminó normalmente*/
+	finish_game_and_cleanup(&M, state, sync, state_bytes);
 	return 0;
 }

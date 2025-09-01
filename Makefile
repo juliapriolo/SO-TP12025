@@ -79,9 +79,14 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 dirs:
 	@mkdir -p $(BINDIR) $(OBJDIR)
 
-clean:
+clean: clean-shm
 	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log
 	@echo "Limpio."
+
+clean-shm:
+	@echo "Limpiando memoria compartida..."
+	@-rm -f /dev/shm/game_state /dev/shm/game_sync
+	@echo "Memoria compartida limpiada."
 
 # Ejecuta *nuestro* master con rutas ABS a view/player
 run-master: deps master view player
@@ -138,7 +143,8 @@ help:
 	@echo "  run-master       - Ejecutar con binario master propio"
 	@echo "  run-chompchamps  - Ejecutar con ChompChamps (detecta arquitectura automáticamente)"
 	@echo "  run-valgrind     - Ejecutar con valgrind usando master propio"
-	@echo "  clean            - Limpiar archivos compilados"
+	@echo "  clean            - Limpiar archivos compilados y memoria compartida"
+	@echo "  clean-shm        - Limpiar solo memoria compartida"
 	@echo "  format           - Formatear código con clang-format"
 	@echo ""
 	@echo "Variables configurables:"

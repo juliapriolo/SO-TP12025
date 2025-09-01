@@ -93,4 +93,7 @@ void print_podium(const GameState *state);
 /* limpia recursos: cierra FDs y destruye semáforos */
 void cleanup_master(Master *M);
 
+/* finaliza el juego y limpia todos los recursos */
+void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t state_bytes);
+
 #endif //SO_TP12025_MASTER_UTILS_H

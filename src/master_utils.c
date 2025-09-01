@@ -13,6 +13,7 @@
 #include <semaphore.h>
 #include "master_utils.h"
 #include "sync_writer.h"
+#include "shm.h"
 
 /* direcciones 0..7: 0=arriba y sentido horario (igual que player.c) */
 static const int DX[8] = {0, 1, 1, 1, 0, -1, -1, -1};
@@ -475,6 +476,44 @@ void print_podium(const GameState *state) {
 	}
 
 	printf("\n");
+}
+
+void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t state_bytes) {
+	/*  esperar a que terminen vista y jugadores; loguear estado  */
+	/* post extra a la vista por si quedo esperando */
+	if (M->view.pid > 0)
+		(void) sem_post(&M->sync->sem_master_to_view);
+
+	if (M->view.pid > 0) {
+		int status;
+		while (waitpid(M->view.pid, &status, 0) == -1 && errno == EINTR) {
+		}
+		print_child_status(M->view.pid, status, "view", NULL);
+	}
+
+	printf("Juego terminado! \n");
+	sleep_ms(1000);
+	print_podium(state);
+
+	int status;
+	for (unsigned i = 0; i < M->args.player_count; ++i) {
+		pid_t pid = M->players[i].pid;
+		if (pid <= 0)
+			continue;
+		while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
+		}
+		print_child_status(pid, status, "player", &state->players[i]);
+	}
+
+	cleanup_master(M);
+
+	/* limpia memoria compartida */
+	shm_unmap(sync, sizeof(GameSync));
+	shm_unmap(state, state_bytes);
+	
+	/* elimina archivos de memoria compartida del sistema */
+	shm_delete("/game_sync");
+	shm_delete("/game_state");
 }
 
 void cleanup_master(Master *M) {
