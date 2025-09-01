@@ -245,6 +245,8 @@ game_finished:
 		print_child_status(pid, status, "player", &state->players[i]);
 	}
 
+	cleanup_master(&M);
+
 	/* limpia */
 	shm_unmap(sync, sizeof(GameSync));
 	shm_unmap(state, state_bytes);

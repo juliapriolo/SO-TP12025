@@ -477,3 +477,39 @@ void print_podium(const GameState *state) {
 	printf("\n");
 }
 
+void cleanup_master(Master *M) {
+	/* Cerrar todos los file descriptors de jugadores */
+	for (unsigned i = 0; i < M->args.player_count; ++i) {
+		if (M->players[i].pipe_rd >= 0) {
+			close(M->players[i].pipe_rd);
+			M->players[i].pipe_rd = -1;
+		}
+		if (M->players[i].pipe_wr >= 0) {
+			close(M->players[i].pipe_wr);
+			M->players[i].pipe_wr = -1;
+		}
+	}
+
+	/* Cerrar file descriptors de la vista si existe */
+	if (M->view.pipe_rd >= 0) {
+		close(M->view.pipe_rd);
+		M->view.pipe_rd = -1;
+	}
+	if (M->view.pipe_wr >= 0) {
+		close(M->view.pipe_wr);
+		M->view.pipe_wr = -1;
+	}
+
+	/* Destruir todos los semáforos */
+	if (M->sync) {
+		sem_destroy(&M->sync->sem_master_to_view);
+		sem_destroy(&M->sync->sem_view_to_master);
+		sem_destroy(&M->sync->sem_turnstile);
+		sem_destroy(&M->sync->sem_state);
+		sem_destroy(&M->sync->sem_reader_mutex);
+		
+		for (unsigned i = 0; i < 9; ++i) {
+			sem_destroy(&M->sync->sem_player_can_send[i]);
+		}
+	}
+}
