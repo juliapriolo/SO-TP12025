@@ -272,17 +272,14 @@ void setup_ncurses_colors(void) {
 	init_pair(17, COLOR_BLACK, -1);
 	init_pair(18, COLOR_BLACK, -1);
 
-	/* Paleta de jugadores para fondo de casilla 20..28 */
-	init_pair(20, -1, COLOR_CYAN);
-	init_pair(21, -1, COLOR_MAGENTA);
-	init_pair(22, -1, COLOR_YELLOW);
-	init_pair(23, -1, COLOR_GREEN);
-	init_pair(24, -1, COLOR_BLUE);
-	init_pair(25, -1, COLOR_WHITE);
-	init_pair(26, -1, COLOR_RED);
-
-	init_pair(27, -1, COLOR_BLACK);
-	init_pair(28, -1, COLOR_BLACK);
+    // Paleta de jugadores para fondo de casilla 20..28
+    short bg_colors[9] = {
+        COLOR_CYAN, COLOR_MAGENTA, COLOR_YELLOW, COLOR_GREEN,
+        COLOR_BLUE, COLOR_WHITE, COLOR_RED, COLOR_BLACK, COLOR_BLACK
+    };
+    for (int i = 0; i < 9; ++i) {
+        init_pair((short)(20 + i), -1, (short)bg_colors[i]);
+    }
 }
 
 void render_final(const GameState *state, uint8_t *trail, int headless) {
