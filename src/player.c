@@ -72,8 +72,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Bucle principal
-    bool error = false;
-    while (!fin && !error) {
+    while (!fin) {
         // Esperar turno (G[i]), manejando EINTR
         int sem_res;
         do {
@@ -82,7 +81,6 @@ int main(int argc, char *argv[]) {
 
         if (sem_res == -1) {
             perror("sem_wait(G[i])");
-            error = true;
             break;
         }
 
@@ -104,7 +102,6 @@ int main(int argc, char *argv[]) {
         ssize_t wr = write(STDOUT_FILENO, &move, 1);
         if (wr != 1) {
             perror("write(move)");
-            error = true;
             break;
         }
     }
