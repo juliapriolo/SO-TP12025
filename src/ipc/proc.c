@@ -7,7 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "master_utils.h"
+#include "proc.h"
+#include "timing.h"
 
 pid_t spawn_view(Master *M) {
     if (!M->args.view_path)

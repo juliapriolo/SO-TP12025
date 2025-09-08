@@ -22,16 +22,17 @@ INCDIR   := $(ROOT)/include
 SRCDIR   := $(ROOT)/src
 BINDIR   := $(ROOT)/bin
 OBJDIR   := $(ROOT)/.obj
-INCLUDES := -I$(INCDIR)
+INCLUDES := -I$(INCDIR) -I$(INCDIR)/master -I$(INCDIR)/ipc -I$(INCDIR)/player -I$(INCDIR)/view -I$(INCDIR)/utils
 
 VIEW_SRC   := $(SRCDIR)/view/view.c $(SRCDIR)/view/view_utils.c $(SRCDIR)/ipc/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
-PLAYER_SRC := $(SRCDIR)/player/player.c $(SRCDIR)/player/player_utils.c $(SRCDIR)/ipc/shm.c
+PLAYER_SRC := $(SRCDIR)/player/player.c $(SRCDIR)/player/player_utils.c $(SRCDIR)/ipc/shm.c $(SRCDIR)/utils/timing.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
+
 MASTER_SRC := $(SRCDIR)/master/master.c \
 				  $(SRCDIR)/master/args.c \
-				  $(SRCDIR)/master/timing.c \
-			  $(SRCDIR)/core/game.c \
+				  $(SRCDIR)/utils/timing.c \
+              $(SRCDIR)/master/game.c \
 			  $(SRCDIR)/ipc/sync_init.c \
 			  $(SRCDIR)/ipc/notify.c \
 				  $(SRCDIR)/ipc/proc.c \
@@ -86,7 +87,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 dirs:
-	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/master $(OBJDIR)/core $(OBJDIR)/player $(OBJDIR)/view $(OBJDIR)/ipc
+	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/master $(OBJDIR)/core $(OBJDIR)/player $(OBJDIR)/view $(OBJDIR)/ipc $(OBJDIR)/utils
 
 clean: clean-shm
 	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log

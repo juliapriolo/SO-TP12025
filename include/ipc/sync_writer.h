@@ -2,15 +2,9 @@
 #define SO_TP12025_SYNC_WRITER_H
 
 #include "sync.h"
-#include <errno.h>
-#include <semaphore.h>
+#include "sem_utils.h"
 
 /* Helper: esperar manejando EINTR */
-static inline void sem_wait_intr(sem_t *s) {
-	while (sem_wait(s) == -1 && errno == EINTR) { /* retry */
-	}
-}
-
 /*
  * writer_enter:
  *  - C: tomamos el molinete (turnstile) para bloquear nuevos lectores.
@@ -20,8 +14,8 @@ static inline void sem_wait_intr(sem_t *s) {
  * puede “colarse” hasta que liberemos en writer_exit().
  */
 static inline void writer_enter(GameSync *sync) {
-	sem_wait_intr(&sync->sem_turnstile); /* C */
-	sem_wait_intr(&sync->sem_state);	 /* D */
+    sem_wait_intr(&sync->sem_turnstile); /* C */
+    sem_wait_intr(&sync->sem_state);     /* D */
 }
 
 /*

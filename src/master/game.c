@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "master_utils.h"
+#include "game.h"
 // --- board.c ---
 void initial_positions(unsigned w, unsigned h, unsigned n,
 					   unsigned short xs[MAX_PLAYERS], unsigned short ys[MAX_PLAYERS]) {
@@ -28,22 +28,16 @@ void initial_positions(unsigned w, unsigned h, unsigned n,
 }
 
 void init_board(GameState *st, unsigned w, unsigned h) {
-	for (unsigned y = 0; y < h; ++y) {
-		for (unsigned x = 0; x < w; ++x) {
-			int val = (rand() % 9) + 1; /* 1..9 */
-			st->board[y * w + x] = val;
-		}
-	}
+    for (unsigned y = 0; y < h; ++y) {
+        for (unsigned x = 0; x < w; ++x) {
+            int val = (rand() % 9) + 1; /* 1..9 */
+            st->board[board_idx(st, x, y)] = val;
+        }
+    }
 }
 
 // --- moves.c ---
-/* direcciones 0..7: 0=arriba y sentido horario */
-static const int DX[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-static const int DY[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
-
-bool cell_in_bounds(unsigned w, unsigned h, int nx, int ny) {
-	return nx >= 0 && ny >= 0 && (unsigned) nx < w && (unsigned) ny < h;
-}
+#include "directions.h"
 
 bool player_can_move(const GameState *st, unsigned player_idx) {
 	if (player_idx >= st->player_count)
@@ -53,8 +47,8 @@ bool player_can_move(const GameState *st, unsigned player_idx) {
 
 	/* revisar las 8 direcciones */
 	for (int dir = 0; dir < 8; ++dir) {
-	int nx = (int) x + DX[dir];
-	int ny = (int) y + DY[dir];
+    int nx = (int) x + DX[dir];
+    int ny = (int) y + DY[dir];
 	if (cell_in_bounds(st->width, st->height, nx, ny)) {
 			int32_t cell = st->board[(unsigned) ny * st->width + (unsigned) nx];
 			if (cell > 0)
@@ -90,7 +84,7 @@ bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char move) {
 	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
 	return false;
 	}
-	int32_t *cellp = &st->board[(unsigned) ny * st->width + (unsigned) nx];
+    int32_t *cellp = &st->board[board_idx(st, (unsigned)nx, (unsigned)ny)];
 	if (*cellp <= 0) {
 	st->players[player_idx].invalid_moves++;
 	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;

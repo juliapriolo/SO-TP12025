@@ -1,7 +1,7 @@
 #ifndef SO_TP12025_NOTIFY_H
 #define SO_TP12025_NOTIFY_H
 
-#include "master_utils.h"  // para Master
+#include "master_utils.h"  
 
 void notify_view_and_delay_if_any(Master *M);
 void allow_next_send(Master *M, unsigned i);

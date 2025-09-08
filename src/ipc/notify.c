@@ -3,14 +3,15 @@
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <semaphore.h>
-#include "master_utils.h"
+#include "notify.h"
+#include "timing.h"
 #include "sync_reader.h"
 #include "sync_writer.h"
 
 void notify_view_and_delay_if_any(Master *M) {
     if (M->view.pid > 0) {
         (void) sem_post(&M->sync->sem_master_to_view);
-        while (sem_wait(&M->sync->sem_view_to_master) == -1 && errno == EINTR) { }
+        sem_wait_intr(&M->sync->sem_view_to_master);
     }
     if (M->args.delay_ms > 0) {
         sleep_ms(M->args.delay_ms);
@@ -29,7 +30,7 @@ void set_finished_and_wake_all(Master *M) {
     /* despertar a la vista para que haga el ultimo render */
     if (M->view.pid > 0) {
         (void) sem_post(&M->sync->sem_master_to_view);
-        while (sem_wait(&M->sync->sem_view_to_master) == -1 && errno == EINTR) { }
+        sem_wait_intr(&M->sync->sem_view_to_master);
     }
 
     /* despertar al menos una vez a cada jugador (si alguno esta en sem_wait) */

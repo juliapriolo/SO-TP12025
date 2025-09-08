@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "master_utils.h"
+#include "timing.h"
 
 void die(const char *fmt, ...) {
     va_list ap;

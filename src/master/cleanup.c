@@ -5,8 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "master_utils.h"
+#include "cleanup.h"
+#include "proc.h"
+#include "timing.h"
+#include "game.h"
 #include "shm.h"
+#include "config.h"
 #include <sys/wait.h>
 
 void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t state_bytes) {
@@ -38,8 +42,8 @@ void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t
     shm_unmap(state, state_bytes);
 
     /* elimina archivos de memoria compartida del sistema */
-    shm_delete("/game_sync");
-    shm_delete("/game_state");
+    shm_delete(SHM_SYNC_NAME);
+    shm_delete(SHM_STATE_NAME);
 }
 
 void cleanup_master(Master *M) {
@@ -72,7 +76,7 @@ void cleanup_master(Master *M) {
         sem_destroy(&M->sync->sem_turnstile);
         sem_destroy(&M->sync->sem_state);
         sem_destroy(&M->sync->sem_reader_mutex);
-        for (unsigned i = 0; i < 9; ++i) {
+        for (unsigned i = 0; i < MAX_PLAYERS; ++i) {
             sem_destroy(&M->sync->sem_player_can_send[i]);
         }
     }

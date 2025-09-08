@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "master_utils.h"
+#include "args.h"
+#include "timing.h"
 #include <time.h>
 
 void usage(const char *argv0) {

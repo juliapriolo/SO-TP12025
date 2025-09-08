@@ -16,6 +16,7 @@
 #include <fcntl.h>
 
 #include "shm.h"
+#include "config.h"
 #include "state.h"
 #include "sync.h"
 #include "master_utils.h"
@@ -41,11 +42,11 @@ int main(int argc, char **argv) {
 
 	/* crear shm estado y sync */
 	size_t state_bytes = gamestate_bytes((uint16_t) args.width, (uint16_t) args.height);
-	GameState *state = (GameState *) shm_create("/game_state", state_bytes, O_RDWR);
+    GameState *state = (GameState *) shm_create(SHM_STATE_NAME, state_bytes, O_RDWR);
 	if (!state)
 		die("shm_create(/game_state) failed");
 
-	GameSync *sync = (GameSync *) shm_create("/game_sync", sizeof(GameSync), O_RDWR);
+    GameSync *sync = (GameSync *) shm_create(SHM_SYNC_NAME, sizeof(GameSync), O_RDWR);
 	if (!sync)
 		die("shm_create(/game_sync) failed");
 

@@ -4,7 +4,9 @@
 #include <errno.h>
 #include <string.h>
 #include <semaphore.h>
-#include "master_utils.h"
+#include "sync_init.h"
+#include "state.h"
+#include "timing.h"
 
 void init_sync(GameSync *sync, unsigned n_players) {
     const int pshared = 1;
@@ -25,7 +27,7 @@ void init_sync(GameSync *sync, unsigned n_players) {
     sync->readers_count = 0;
 
     /* G[i]: una “ventana” por jugador. dejalo en 1 para habilitar el primer envio */
-    for (unsigned i = 0; i < 9; ++i) {
+    for (unsigned i = 0; i < MAX_PLAYERS; ++i) {
         unsigned init_val = (i < n_players) ? 1u : 0u;
         if (sem_init(&sync->sem_player_can_send[i], pshared, init_val) == -1)
             die("sem_init(sem_player_can_send[%u]): %s", i, strerror(errno));
