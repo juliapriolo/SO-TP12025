@@ -42,8 +42,6 @@ void die(const char *fmt, ...);
 
 void sleep_ms(long ms);
 
-uint64_t now_ms_monotonic(void);
-
 /*  colocacion determinista de jugadores en una grilla 3x3  */
 void initial_positions(unsigned w, unsigned h, unsigned n, unsigned short xs[MAX_PLAYERS],
 							  unsigned short ys[MAX_PLAYERS]);

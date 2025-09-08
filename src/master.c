@@ -94,7 +94,9 @@ int main(int argc, char **argv) {
 	}
 
 	/*  bucle principal: select() + round-robin  */
-	uint64_t last_valid_ms = now_ms_monotonic();
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	uint64_t last_valid_ms = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
 	unsigned rr_next = 0; /* indice del proximo a intentar atender primero */
 
 	/* transformar timeout_s a ms */
@@ -125,7 +127,8 @@ int main(int argc, char **argv) {
 		}
 
 		/* calcular cuánto falta para el timeout relativo a la ultima jugada valida */
-		uint64_t now = now_ms_monotonic();
+		gettimeofday(&tv_now, NULL);
+		uint64_t now = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
 		uint64_t elapsed = now - last_valid_ms;
 		if (elapsed >= timeout_ms) {
 			set_finished_and_wake_all(&M);
@@ -197,7 +200,8 @@ int main(int argc, char **argv) {
 			/* notificar a vista solo si hubo cambio de estado */
 			if (was_valid) {
 				notify_view_and_delay_if_any(&M);
-				last_valid_ms = now_ms_monotonic();
+				gettimeofday(&tv_now, NULL);
+				last_valid_ms = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
 			}
 
 			if (all_blocked) {

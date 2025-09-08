@@ -36,12 +36,6 @@ void sleep_ms(long ms) {
 	}
 }
 
-uint64_t now_ms_monotonic(void) {
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return (uint64_t) ts.tv_sec * 1000ULL + (uint64_t) ts.tv_nsec / 1000000ULL;
-}
-
 void initial_positions(unsigned w, unsigned h, unsigned n, unsigned short xs[MAX_PLAYERS],
 							  unsigned short ys[MAX_PLAYERS]) {
 	/* anclas en una grilla 3x3 (centros relativos) */
