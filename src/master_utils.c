@@ -210,8 +210,13 @@ pid_t spawn_view(Master *M) {
 }
 
 void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[MAX_PLAYERS]) {
+	for (unsigned k = 0; k < MAX_PLAYERS; ++k) {
+		M->players[k].pipe_rd = -1;
+		M->players[k].pipe_wr = -1;
+	}
+
 	for (unsigned i = 0; i < M->args.player_count; ++i) {
-		int pipefd[2];
+		int pipefd[2] = {-1, -1};
 		if (pipe(pipefd) == -1)
 			die("pipe(): %s", strerror(errno));
 
@@ -244,11 +249,13 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
 				perror("dup2(player)");
 				_exit(127);
 			}
-			/* cerrar extremos no usados y no heredar otros pipes */
+			close(pipefd[1]);
+			close(pipefd[0]);
+
 			for (unsigned k = 0; k < M->args.player_count; ++k) {
-				if (M->players[k].pipe_rd >= 0)
+				if (M->players[k].pipe_rd >= 3)
 					close(M->players[k].pipe_rd);
-				if (M->players[k].pipe_wr >= 0 && M->players[k].pipe_wr != pipefd[1])
+				if (M->players[k].pipe_wr >= 3)
 					close(M->players[k].pipe_wr);
 			}
 			if (M->view.pid > 0) { /* nada especial que cerrar del view */
