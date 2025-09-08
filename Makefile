@@ -24,19 +24,19 @@ BINDIR   := $(ROOT)/bin
 OBJDIR   := $(ROOT)/.obj
 INCLUDES := -I$(INCDIR)
 
-VIEW_SRC   := $(SRCDIR)/view.c $(SRCDIR)/view_utils.c $(SRCDIR)/shm.c
+VIEW_SRC   := $(SRCDIR)/view/view.c $(SRCDIR)/view/view_utils.c $(SRCDIR)/ipc/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
-PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/player_utils.c $(SRCDIR)/shm.c
+PLAYER_SRC := $(SRCDIR)/player/player.c $(SRCDIR)/player/player_utils.c $(SRCDIR)/ipc/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
-MASTER_SRC := $(SRCDIR)/master.c \
-			  $(SRCDIR)/args.c \
-			  $(SRCDIR)/timing.c \
-			  $(SRCDIR)/game.c \
-			  $(SRCDIR)/sync_init.c \
-			  $(SRCDIR)/notify.c \
-			  $(SRCDIR)/proc.c \
-			  $(SRCDIR)/cleanup.c \
-			  $(SRCDIR)/shm.c
+MASTER_SRC := $(SRCDIR)/master/master.c \
+				  $(SRCDIR)/master/args.c \
+				  $(SRCDIR)/master/timing.c \
+			  $(SRCDIR)/core/game.c \
+			  $(SRCDIR)/ipc/sync_init.c \
+			  $(SRCDIR)/ipc/notify.c \
+				  $(SRCDIR)/ipc/proc.c \
+				  $(SRCDIR)/master/cleanup.c \
+			  $(SRCDIR)/ipc/shm.c
 
 MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
 
@@ -86,7 +86,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 dirs:
-	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/game_utils
+	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/master $(OBJDIR)/core $(OBJDIR)/player $(OBJDIR)/view $(OBJDIR)/ipc
 
 clean: clean-shm
 	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log
@@ -133,7 +133,7 @@ run-valgrind: deps master view player
 
 FORMAT = clang-format
 FORMAT_FLAGS = -i
-SRC = $(wildcard src/*.c include/*.h)
+SRC = $(shell find src -name '*.c' -print) $(wildcard include/*.h)
 
 format:
 	$(FORMAT) $(FORMAT_FLAGS) $(SRC)

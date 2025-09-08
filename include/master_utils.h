@@ -8,8 +8,6 @@
 #include <unistd.h>
 
 
-#define MAX_PLAYERS 9
-
 /* parseo simple de argumentos */
 typedef struct {
 	unsigned width, height;

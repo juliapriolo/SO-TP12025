@@ -19,8 +19,8 @@
 #include "state.h"
 #include "sync.h"
 #include "master_utils.h"
-#include <sync_reader.h>
-#include <sync_writer.h>
+#include "sync_reader.h"
+#include "sync_writer.h"
 
 #include "args.h"
 #include "cleanup.h"

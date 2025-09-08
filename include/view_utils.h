@@ -7,7 +7,6 @@
 #include "sync.h"
 #include <ncurses.h>
 
-#define MAX_PLAYERS 9
 #define CELL_WIDTH 5
 #define CELL_HEIGHT 2
 #define CELL_INNER_WIDTH 4

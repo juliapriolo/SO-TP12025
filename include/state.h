@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifndef MAX_PLAYERS
+#define MAX_PLAYERS 9
+#endif
+
 typedef struct {
 	char name[16];
 	unsigned int score;
@@ -21,7 +25,7 @@ typedef struct {
 	unsigned short width;
 	unsigned short height;
 	unsigned int player_count;
-	PlayerInfo players[9];
+    PlayerInfo players[MAX_PLAYERS];
 	volatile bool finished;
 	int board[];
 } GameState;
