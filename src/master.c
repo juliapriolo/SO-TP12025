@@ -22,6 +22,15 @@
 #include <sync_reader.h>
 #include <sync_writer.h>
 
+#include "args.h"
+#include "cleanup.h"
+#include "timing.h"
+#include "sync_init.h"
+#include "game.h"
+#include "notify.h"
+#include "proc.h"
+
+
 int main(int argc, char **argv) {
 	signal(SIGPIPE, SIG_IGN);
 

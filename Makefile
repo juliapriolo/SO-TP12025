@@ -28,7 +28,16 @@ VIEW_SRC   := $(SRCDIR)/view.c $(SRCDIR)/view_utils.c $(SRCDIR)/shm.c
 VIEW_OBJ   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(VIEW_SRC))
 PLAYER_SRC := $(SRCDIR)/player.c $(SRCDIR)/player_utils.c $(SRCDIR)/shm.c
 PLAYER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(PLAYER_SRC))
-MASTER_SRC := $(SRCDIR)/master.c $(SRCDIR)/master_utils.c $(SRCDIR)/shm.c
+MASTER_SRC := $(SRCDIR)/master.c \
+			  $(SRCDIR)/args.c \
+			  $(SRCDIR)/timing.c \
+			  $(SRCDIR)/game.c \
+			  $(SRCDIR)/sync_init.c \
+			  $(SRCDIR)/notify.c \
+			  $(SRCDIR)/proc.c \
+			  $(SRCDIR)/cleanup.c \
+			  $(SRCDIR)/shm.c
+
 MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
 
 # Binario propio (compilado desde src/master.c)
@@ -77,7 +86,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 dirs:
-	@mkdir -p $(BINDIR) $(OBJDIR)
+	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/game_utils
 
 clean: clean-shm
 	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log
