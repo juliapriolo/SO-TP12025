@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdbool.h>
 #include "game.h"
-// --- board.c ---
+#include "directions.h"
+
 void initial_positions(unsigned w, unsigned h, unsigned n,
 					   unsigned short xs[MAX_PLAYERS], unsigned short ys[MAX_PLAYERS]) {
-	/* anclas en una grilla 3x3 (centros relativos) */
 	const int gx[3] = {1, 2, 3};
 	const int gy[3] = {1, 2, 3};
 	unsigned count = 0;
@@ -36,8 +36,7 @@ void init_board(GameState *st, unsigned w, unsigned h) {
     }
 }
 
-// --- moves.c ---
-#include "directions.h"
+
 
 bool player_can_move(const GameState *st, unsigned player_idx) {
 	if (player_idx >= st->player_count)
@@ -45,7 +44,6 @@ bool player_can_move(const GameState *st, unsigned player_idx) {
 	unsigned short x = st->players[player_idx].x;
 	unsigned short y = st->players[player_idx].y;
 
-	/* revisar las 8 direcciones */
 	for (int dir = 0; dir < 8; ++dir) {
     int nx = (int) x + DX[dir];
     int ny = (int) y + DY[dir];
@@ -68,11 +66,19 @@ unsigned count_players_that_can_move(const GameState *st) {
 	return can_move;
 }
 
-bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char move) {
-	if (move > 7) {
+static void invalidate_and_maybe_block(GameState *st, unsigned player_idx) {
 	st->players[player_idx].invalid_moves++;
 	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
-	return false;
+}
+
+static void update_blocked_after_move(GameState *st, unsigned player_idx) {
+	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
+}
+
+bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char move) {
+	if (move > 7) {
+		invalidate_and_maybe_block(st, player_idx);
+		return false;
 	}
 	int dx = DX[move], dy = DY[move];
 	int x = (int) st->players[player_idx].x;
@@ -80,29 +86,25 @@ bool apply_move_locked(GameState *st, unsigned player_idx, unsigned char move) {
 	int nx = x + dx, ny = y + dy;
 
 	if (!cell_in_bounds(st->width, st->height, nx, ny)) {
-	st->players[player_idx].invalid_moves++;
-	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
-	return false;
+		invalidate_and_maybe_block(st, player_idx);
+		return false;
 	}
-    int32_t *cellp = &st->board[board_idx(st, (unsigned)nx, (unsigned)ny)];
+	int32_t *cellp = &st->board[board_idx(st, (unsigned)nx, (unsigned)ny)];
 	if (*cellp <= 0) {
-	st->players[player_idx].invalid_moves++;
-	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
-	return false;
+		invalidate_and_maybe_block(st, player_idx);
+		return false;
 	}
 
-	/* valido */
 	st->players[player_idx].score += (unsigned) *cellp;
 	st->players[player_idx].valid_moves++;
 	*cellp = -(int) player_idx;
 	st->players[player_idx].x = (unsigned short) nx;
 	st->players[player_idx].y = (unsigned short) ny;
 
-	if (!player_can_move(st, player_idx)) st->players[player_idx].blocked = true;
+	update_blocked_after_move(st, player_idx);
 	return true;
 }
 
-// --- podium.c ---
 int compare_players_for_podium(const void *a, const void *b) {
 	const PlayerInfo *pa = (const PlayerInfo *) a;
 	const PlayerInfo *pb = (const PlayerInfo *) b;
@@ -118,30 +120,45 @@ int compare_players_for_podium(const void *a, const void *b) {
 	return 0;
 }
 
-void print_podium(const GameState *state) {
-	PlayerInfo players_copy[MAX_PLAYERS];
-	for (unsigned i = 0; i < state->player_count; ++i) {
-		players_copy[i] = state->players[i];
+static void copy_players(PlayerInfo *dest, const PlayerInfo *src, unsigned count) {
+	for (unsigned i = 0; i < count; ++i) {
+		dest[i] = src[i];
 	}
+}
 
-	qsort(players_copy, state->player_count, sizeof(PlayerInfo), compare_players_for_podium);
-
+static void print_podium_header(void) {
 	printf("\n");
 	printf("=== PODIO FINAL ===\n");
 	printf("POS  JUGADOR      PUNTAJE  VALIDOS  INVALIDOS\n");
 	printf("==========================================\n");
+}
 
-	for (unsigned i = 0; i < state->player_count; ++i) {
+static void print_podium_rows(const PlayerInfo *players, unsigned count) {
+	for (unsigned i = 0; i < count; ++i) {
 		const char *medal = "   ";
 		if (i == 0) medal = "[1]";
-	else if (i == 1) medal = "[2]";
-	else if (i == 2) medal = "[3]";
-	else medal = "   ";
-
-	printf("%-3s  %-12s %-8u %-8u %-8u\n", medal, players_copy[i].name, players_copy[i].score,
-	       players_copy[i].valid_moves, players_copy[i].invalid_moves);
-    }
+		else if (i == 1) medal = "[2]";
+		else if (i == 2) medal = "[3]";
+		printf("%-3s  %-12s %-8u %-8u %-8u\n", medal, players[i].name, players[i].score,
+			   players[i].valid_moves, players[i].invalid_moves);
+	}
 	printf("==========================================\n");
+}
+
+static void print_tie_breakers(void) {
+	printf("\nCriterios de desempate:\n");
+	printf("1. Mayor puntaje\n");
+	printf("2. Menor cantidad de movimientos validos (eficiencia)\n");
+	printf("3. Menor cantidad de movimientos invalidos\n");
+	printf("4. Empate si todos los criterios son iguales\n");
+}
+
+void print_podium(const GameState *state) {
+	PlayerInfo players_copy[MAX_PLAYERS];
+	copy_players(players_copy, state->players, state->player_count);
+	qsort(players_copy, state->player_count, sizeof(PlayerInfo), compare_players_for_podium);
+	print_podium_header();
+	print_podium_rows(players_copy, state->player_count);
 
 	bool has_ties = false;
 	for (unsigned i = 0; i < state->player_count - 1; ++i) {
@@ -150,14 +167,8 @@ void print_podium(const GameState *state) {
 			break;
 		}
 	}
-
 	if (has_ties) {
-		printf("\nCriterios de desempate:\n");
-	printf("1. Mayor puntaje\n");
-	printf("2. Menor cantidad de movimientos validos (eficiencia)\n");
-	printf("3. Menor cantidad de movimientos invalidos\n");
-		printf("4. Empate si todos los criterios son iguales\n");
+		print_tie_breakers();
 	}
-
 	printf("\n");
 }

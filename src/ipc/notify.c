@@ -8,11 +8,16 @@
 #include "sync_reader.h"
 #include "sync_writer.h"
 
-void notify_view_and_delay_if_any(Master *M) {
+
+static void handshake_with_view(Master *M) {
     if (M->view.pid > 0) {
         (void) sem_post(&M->sync->sem_master_to_view);
         sem_wait_intr(&M->sync->sem_view_to_master);
     }
+}
+
+void notify_view_and_delay_if_any(Master *M) {
+    handshake_with_view(M);
     if (M->args.delay_ms > 0) {
         sleep_ms(M->args.delay_ms);
     }
@@ -27,13 +32,8 @@ void set_finished_and_wake_all(Master *M) {
     M->state->finished = true;
     writer_exit(M->sync);
 
-    /* despertar a la vista para que haga el ultimo render */
-    if (M->view.pid > 0) {
-        (void) sem_post(&M->sync->sem_master_to_view);
-        sem_wait_intr(&M->sync->sem_view_to_master);
-    }
+    handshake_with_view(M);
 
-    /* despertar al menos una vez a cada jugador (si alguno esta en sem_wait) */
     for (unsigned i = 0; i < M->args.player_count; ++i) {
         (void) sem_post(&M->sync->sem_player_can_send[i]);
     }

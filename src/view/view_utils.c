@@ -1,9 +1,6 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "view_utils.h"
-
 #include <stdlib.h>
 
 static int player_text_pair(unsigned i);
@@ -23,10 +20,10 @@ void print_board_flat(const GameState *s, const uint8_t *trail_idx, int *out_las
 
 	print_board_header(s);
 	print_board_top_border(s);
-	int last_row = print_board_rows(s, trail_idx); // ← Capturar la fila retornada
+	int last_row = print_board_rows(s, trail_idx); 
 
 	if (out_last_row) {
-		*out_last_row = last_row; // ← Usar la fila real
+		*out_last_row = last_row; 
 	}
 }
 
@@ -41,7 +38,6 @@ int print_players(const GameState *s, int board_last_row) {
 		const PlayerInfo *p = &s->players[i];
 		int pair = player_text_pair(i);
 
-		/* Usar formato compacto para ahorrar espacio vertical */
 		attron(COLOR_PAIR(pair));
 		mvprintw(row, 0, " [%u] %-8s %3u %2u/%2u (%u,%u) ", i, p->name, p->score, p->valid_moves, p->invalid_moves,
 				 p->x, p->y);
@@ -61,7 +57,7 @@ int print_players(const GameState *s, int board_last_row) {
 		}
 		row++;
 	}
-	return row; /* última fila utilizada + 1 */
+	return row; 
 }
 
 int print_final_summary(const GameState *s, int start_row) {
@@ -77,7 +73,6 @@ int print_final_summary(const GameState *s, int start_row) {
 		int pair = player_text_pair(i);
 		attron(COLOR_PAIR(pair));
 
-		// Datos con anchos exactos que coinciden con el header
 		mvprintw(row, 0, "%-4u  %-12s  %7u  %8u  %9u  %-8s", i, p->name, p->score, p->valid_moves, p->invalid_moves,
 				 p->blocked ? "BLOCKED" : "OK");
 		attroff(COLOR_PAIR(pair));
@@ -90,10 +85,10 @@ int print_final_summary(const GameState *s, int start_row) {
 
 static int player_text_pair(unsigned i) {
 	return 10 + (int) (i % 9);
-} /* 10..18 */
+}
 static int player_bg_pair(unsigned i) {
 	return 20 + (int) (i % 9);
-} /* 20..28 */
+} 
 
 int player_at(const GameState *s, unsigned x, unsigned y) {
 	for (unsigned i = 0; i < s->player_count && i < MAX_PLAYERS; ++i) {
@@ -153,10 +148,10 @@ static void print_board_top_border(const GameState *s) {
 	int row = 2;
 	int col = 0;
 
-	mvaddch(row, col++, ACS_ULCORNER); // ┌
+	mvaddch(row, col++, ACS_ULCORNER);
 	for (unsigned x = 0; x < s->width; ++x) {
 		for (int i = 0; i < CELL_INNER_WIDTH; i++) {
-			mvaddch(row, col++, ACS_HLINE); // ────
+			mvaddch(row, col++, ACS_HLINE); 
 		}
 		mvaddch(row, col++, (x == (unsigned) (s->width - 1)) ? ACS_URCORNER : ACS_TTEE);
 	}
@@ -184,7 +179,6 @@ static void print_board_row_separator(const GameState *s, unsigned y, int row) {
 	int col = 0;
 
 	if (y == (unsigned) (s->height - 1)) {
-		// Última fila: esquinas inferiores
 		mvaddch(row, col++, ACS_LLCORNER);
 		for (unsigned x = 0; x < s->width; ++x) {
 			for (int i = 0; i < CELL_INNER_WIDTH; i++) {
@@ -194,7 +188,6 @@ static void print_board_row_separator(const GameState *s, unsigned y, int row) {
 		}
 	}
 	else {
-		// Filas intermedias: cruces
 		mvaddch(row, col++, ACS_LTEE);
 		for (unsigned x = 0; x < s->width; ++x) {
 			for (int i = 0; i < CELL_INNER_WIDTH; i++) {
@@ -206,13 +199,11 @@ static void print_board_row_separator(const GameState *s, unsigned y, int row) {
 }
 
 static int print_board_rows(const GameState *s, const uint8_t *trail_idx) {
-	int row = 3; // Después del header y borde superior
+	int row = 3; 
 
 	for (unsigned y = 0; y < s->height; ++y) {
-		// Borde izquierdo
 		mvaddch(row, 0, ACS_VLINE);
 
-		// Contenido de las celdas
 		int col = 1;
 		for (unsigned x = 0; x < s->width; ++x) {
 			print_cell_content(s, trail_idx, x, y, row, col);
@@ -221,12 +212,11 @@ static int print_board_rows(const GameState *s, const uint8_t *trail_idx) {
 		}
 		row++;
 
-		// Línea intermedia o inferior
 		print_board_row_separator(s, y, row);
 		row++;
 	}
 
-	return row; // ← RETORNAR la última fila usada
+	return row;
 }
 
 int initialize_ncurses(SCREEN **scr, int *ncurses_initialized, int *headless) {
@@ -258,11 +248,9 @@ int initialize_ncurses(SCREEN **scr, int *ncurses_initialized, int *headless) {
 }
 
 void setup_ncurses_colors(void) {
-	init_pair(1, COLOR_CYAN, -1);  /* títulos */
-	init_pair(2, COLOR_WHITE, -1); /* celdas normales (texto) */
-	init_pair(4, COLOR_RED, -1);   /* alertas/bloqueado */
-
-	/* Paleta de jugadores (texto para la lista) 10..18 */
+	init_pair(1, COLOR_CYAN, -1);  
+	init_pair(2, COLOR_WHITE, -1); 
+	init_pair(4, COLOR_RED, -1);   
 	init_pair(10, COLOR_CYAN, -1);
 	init_pair(11, COLOR_MAGENTA, -1);
 	init_pair(12, COLOR_YELLOW, -1);
@@ -270,11 +258,9 @@ void setup_ncurses_colors(void) {
 	init_pair(14, COLOR_BLUE, -1);
 	init_pair(15, COLOR_WHITE, -1);
 	init_pair(16, COLOR_RED, -1);
-
 	init_pair(17, COLOR_BLACK, -1);
 	init_pair(18, COLOR_BLACK, -1);
 
-    // Paleta de jugadores para fondo de casilla 20..28
     short bg_colors[9] = {
         COLOR_CYAN, COLOR_MAGENTA, COLOR_YELLOW, COLOR_GREEN,
         COLOR_BLUE, COLOR_WHITE, COLOR_RED, COLOR_BLACK, COLOR_BLACK
@@ -295,7 +281,6 @@ void render_final(const GameState *state, uint8_t *trail, int headless) {
 		mvprintw(after_summary + 1, 0, "Juego terminado. Presioná cualquier tecla para salir...");
 		attroff(A_BOLD);
 		refresh();
-		/* Espera bloqueante de una tecla para no borrar la pantalla al salir */
 		nodelay(stdscr, FALSE);
 		(void) getch();
 	}
