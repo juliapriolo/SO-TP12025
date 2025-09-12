@@ -81,7 +81,6 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
                 if (M->players[k].pipe_wr >= 3)
                     close(M->players[k].pipe_wr);
             }
-            if (M->view.pid > 0) { /* nada especial que cerrar del view */ }
 
             /* ejecutar binario del jugador */
             char wbuf[32], hbuf[32];
