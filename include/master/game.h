@@ -3,7 +3,34 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include "state.h"
+#include "master_utils.h"
+
+typedef struct {
+	fd_set rfds;
+	int maxfd;
+	unsigned alive_count;
+} FdSetInfo;
+
+FdSetInfo setup_fd_set(const Master *M);
+
+typedef struct {
+	struct timeval tv;
+	bool timeout_reached;
+} TimeoutInfo;
+
+TimeoutInfo calculate_timeout(uint64_t last_valid_ms, uint64_t timeout_ms);
+
+typedef struct {
+	bool game_ended;
+	bool move_was_valid;
+	uint64_t new_last_valid_ms;
+} MoveProcessResult;
+
+MoveProcessResult process_player_move(Master *M, unsigned player_idx);
 
 // --- board ---
 void initial_positions(unsigned w, unsigned h, unsigned n,
