@@ -33,6 +33,7 @@ MASTER_SRC := $(SRCDIR)/master/master.c \
 				  $(SRCDIR)/master/args.c \
 				  $(SRCDIR)/utils/timing.c \
               $(SRCDIR)/master/game.c \
+			  $(SRCDIR)/master/game_init.c \
 			  $(SRCDIR)/ipc/sync_init.c \
 			  $(SRCDIR)/ipc/notify.c \
 				  $(SRCDIR)/ipc/proc.c \
@@ -130,6 +131,7 @@ run-valgrind: deps master view player
 	  --track-origins=yes \
 	  --track-fds=yes \
 	  --error-exitcode=1 \
+	  --trace-children=yes \
 	  $(MASTER_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
 FORMAT = clang-format
