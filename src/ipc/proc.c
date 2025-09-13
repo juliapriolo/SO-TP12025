@@ -10,6 +10,46 @@
 #include "proc.h"
 #include "timing.h"
 
+
+static void exec_child_with_dims(const char *path, unsigned w, unsigned h) {
+    char wbuf[32], hbuf[32], pathcpy[256];
+    snprintf(wbuf, sizeof wbuf, "%u", w);
+    snprintf(hbuf, sizeof hbuf, "%u", h);
+    snprintf(pathcpy, sizeof pathcpy, "%s", path);
+    char *argvv[] = {pathcpy, wbuf, hbuf, NULL};
+    execv(pathcpy, argvv);
+    perror("execv");
+    _exit(127);
+}
+
+static void close_all_other_pipes_in_child(const Master *M, unsigned current_player) {
+    for (unsigned k = 0; k < M->args.player_count; ++k) {
+        if (k == current_player) continue; // no cerrar nuestros propios pipes
+        
+        if (M->players[k].pipe_rd >= 3)
+            close(M->players[k].pipe_rd);
+        if (M->players[k].pipe_wr >= 3)
+            close(M->players[k].pipe_wr);
+    }
+}
+
+static void init_player_info(Master *M, unsigned i, unsigned short x, unsigned short y) {
+    PlayerInfo *p = &M->state->players[i];
+    memset(p, 0, sizeof *p);
+    snprintf(p->name, sizeof p->name, "user%u", i);
+    p->score = 0;
+    p->valid_moves = 0;
+    p->invalid_moves = 0;
+    p->x = x;
+    p->y = y;
+    p->blocked = false;
+    p->pid = 0; /* se setea tras fork */
+
+    /* marcar su celda inicial como capturada por -id (0..8). La celda inicial no otorga puntos. */
+    int idx = (int) y * (int) M->args.width + (int) x;
+    M->state->board[idx] = -(int) i;
+}
+
 pid_t spawn_view(Master *M) {
     if (!M->args.view_path)
         return 0;
@@ -19,15 +59,7 @@ pid_t spawn_view(Master *M) {
         die("fork(view): %s", strerror(errno));
     if (pid == 0) {
         /* hijo: exec view */
-        char wbuf[32], hbuf[32];
-        char view_path_copy[256];
-        snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
-        snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
-        snprintf(view_path_copy, sizeof view_path_copy, "%s", M->args.view_path);
-        char *argvv[] = {view_path_copy, wbuf, hbuf, NULL};
-        execv(view_path_copy, argvv);
-        perror("execv(view)");
-        _exit(127);
+        exec_child_with_dims(M->args.view_path, M->args.width, M->args.height);
     }
     return pid;
 }
@@ -48,20 +80,7 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
         M->players[i].path = M->args.player_paths[i];
 
         /* inicializar jugador en el estado (nombre, pos, etc) */
-        PlayerInfo *p = &M->state->players[i];
-        memset(p, 0, sizeof *p);
-        snprintf(p->name, sizeof p->name, "user%u", i);
-        p->score = 0;
-        p->valid_moves = 0;
-        p->invalid_moves = 0;
-        p->x = px[i];
-        p->y = py[i];
-        p->blocked = false;
-        p->pid = 0; /* se setea tras fork */
-
-        /* marcar su celda inicial como capturada por -id (0..8). La celda inicial no otorga puntos. */
-        int idx = (int) py[i] * (int) M->args.width + (int) px[i];
-        M->state->board[idx] = -(int) i;
+        init_player_info(M, i, px[i], py[i]);
 
         pid_t pid = fork();
         if (pid < 0)
@@ -75,23 +94,8 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
             close(pipefd[1]);
             close(pipefd[0]);
 
-            for (unsigned k = 0; k < M->args.player_count; ++k) {
-                if (M->players[k].pipe_rd >= 3)
-                    close(M->players[k].pipe_rd);
-                if (M->players[k].pipe_wr >= 3)
-                    close(M->players[k].pipe_wr);
-            }
-
-            /* ejecutar binario del jugador */
-            char wbuf[32], hbuf[32];
-            char player_path_copy[256];
-            snprintf(wbuf, sizeof wbuf, "%u", M->args.width);
-            snprintf(hbuf, sizeof hbuf, "%u", M->args.height);
-            snprintf(player_path_copy, sizeof player_path_copy, "%s", M->args.player_paths[i]);
-            char *argvp[] = {player_path_copy, wbuf, hbuf, NULL};
-            execv(player_path_copy, argvp);
-            perror("execv(player)");
-            _exit(127);
+            close_all_other_pipes_in_child(M, i);
+            exec_child_with_dims(M->args.player_paths[i], M->args.width, M->args.height);
         }
         /* padre */
         M->players[i].pid = pid;
