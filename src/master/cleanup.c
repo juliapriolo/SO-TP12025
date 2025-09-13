@@ -13,13 +13,28 @@
 #include "config.h"
 #include <sys/wait.h>
 
+static pid_t waitpid_blocking(pid_t pid, int *status) {
+    pid_t result;
+    do {
+        result = waitpid(pid, status, 0);
+    } while (result == -1 && errno == EINTR);
+    return result;
+}
+
+static void close_fd_if_open(int *fd) {
+    if (*fd >= 0) {
+        close(*fd);
+        *fd = -1;
+    }
+}
+
 void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t state_bytes) {
     if (M->view.pid > 0)
         (void) sem_post(&M->sync->sem_master_to_view);
 
     if (M->view.pid > 0) {
         int status;
-        while (waitpid(M->view.pid, &status, 0) == -1 && errno == EINTR) { }
+        waitpid_blocking(M->view.pid, &status);
         print_child_status(M->view.pid, status, "view", NULL);
     }
 
@@ -31,7 +46,7 @@ void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t
     for (unsigned i = 0; i < M->args.player_count; ++i) {
         pid_t pid = M->players[i].pid;
         if (pid <= 0) continue;
-        while (waitpid(pid, &status, 0) == -1 && errno == EINTR) { }
+        waitpid_blocking(pid, &status);
         print_child_status(pid, status, "player", &state->players[i]);
     }
 
@@ -49,25 +64,13 @@ void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t
 void cleanup_master(Master *M) {
     /* Cerrar todos los file descriptors de jugadores */
     for (unsigned i = 0; i < M->args.player_count; ++i) {
-        if (M->players[i].pipe_rd >= 0) {
-            close(M->players[i].pipe_rd);
-            M->players[i].pipe_rd = -1;
-        }
-        if (M->players[i].pipe_wr >= 0) {
-            close(M->players[i].pipe_wr);
-            M->players[i].pipe_wr = -1;
-        }
+        close_fd_if_open(&M->players[i].pipe_rd);
+        close_fd_if_open(&M->players[i].pipe_wr);
     }
 
     /* Cerrar file descriptors de la vista si existe */
-    if (M->view.pipe_rd >= 0) {
-        close(M->view.pipe_rd);
-        M->view.pipe_rd = -1;
-    }
-    if (M->view.pipe_wr >= 0) {
-        close(M->view.pipe_wr);
-        M->view.pipe_wr = -1;
-    }
+    close_fd_if_open(&M->view.pipe_rd);
+    close_fd_if_open(&M->view.pipe_wr);
 
     /* Destruir todos los semáforos */
     if (M->sync) {
