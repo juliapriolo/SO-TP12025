@@ -71,7 +71,8 @@ asan: deps
 	$(MAKE) clean
 	$(MAKE) SAN=1 all
 
-all: dirs view player master
+
+all: deps dirs view player master
 
 view: $(BINDIR)/view
 player: $(BINDIR)/player
