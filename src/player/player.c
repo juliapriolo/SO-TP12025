@@ -19,6 +19,8 @@
 #include <time.h> 
 #include <unistd.h>
 
+
+
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         fprintf(stderr, "Uso: %s <width> <height>\n", argv[0]);

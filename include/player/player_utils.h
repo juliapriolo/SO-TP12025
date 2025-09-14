@@ -19,4 +19,5 @@ int find_self_index(GameState *st);
   Devuelve -1 si no hay movimientos válidos. */
 int pick_direction(GameState *st, unsigned short x, unsigned short y);
 
+
 #endif // PLAYER_UTILS_H
