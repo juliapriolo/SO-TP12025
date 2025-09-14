@@ -8,7 +8,6 @@
 #include "sync_reader.h"
 #include "sync_writer.h"
 
-
 static void handshake_with_view(Master *M) {
     if (M->view.pid > 0) {
         (void) sem_post(&M->sync->sem_master_to_view);

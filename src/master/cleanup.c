@@ -68,7 +68,7 @@ void cleanup_master(Master *M) {
         close_fd_if_open(&M->players[i].pipe_wr);
     }
 
-    /* Cerrar file descriptors de la vista si existe */
+    /* Cerrar file descriptors de la vista*/
     close_fd_if_open(&M->view.pipe_rd);
     close_fd_if_open(&M->view.pipe_wr);
 

@@ -1,7 +1,5 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "shm.h"
 #include "sync.h"
 #include "sync_reader.h"
@@ -56,7 +54,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	/* Buffer de rastro (solo en la view). Guardamos índice de jugador+1 (0=sin rastro). */
 	uint8_t *trail = NULL;
 	if (!headless) {
 		trail = (uint8_t *) calloc((size_t) state->width * (size_t) state->height, 1);
@@ -87,26 +84,23 @@ int main(int argc, char *argv[]) {
 		}
 
 		reader_enter(sync);
-		/* Actualizamos rastro: marcamos la celda actual de cada jugador con su índice+1 */
 
 		update_player_trail(state, trail, headless);
 
 		int last_row = 2;
 		if (!headless) {
 			print_board_flat(state, trail, &last_row);
-			last_row = print_players(state, last_row); /* <- ahora devuelve última fila */
+			last_row = print_players(state, last_row); 
 		}
 		done = state->finished ? 1 : 0;
 		reader_exit(sync);
 
 		if (!headless) {
-			/* Footer compacto pero informativo - siempre en la última línea disponible */
 			int footer_row = (last_row < LINES - 1) ? last_row : LINES - 1;
 			mvprintw(footer_row, 0, "=== finished=%s (esperando al master) ===", done ? "true" : "false");
 			refresh();
 		}
 
-		/* Handshake: devolvemos el turno al master siempre, incluso al final */
 		if (sem_post(&sync->sem_view_to_master) == -1) {
 			error = 1;
 			perror("sem_post(sem_view_to_master)");
@@ -118,9 +112,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/* ===== Render FINAL  ===== */
 	if (!error) {
-		/* Última actualización de rastro por si hubo movimiento en el tick final */
 		reader_enter(sync);
 		update_player_trail(state, trail, headless);
 		reader_exit(sync);

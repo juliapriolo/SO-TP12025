@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 #include "state.h"
-#include "master_utils.h"  // trae Master, Args, Child
+#include "master_utils.h"  
 #include "timing.h"
 
 pid_t spawn_view(Master *M);

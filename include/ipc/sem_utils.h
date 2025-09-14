@@ -5,7 +5,7 @@
 #include <semaphore.h>
 
 static inline void sem_wait_intr(sem_t *s) {
-    while (sem_wait(s) == -1 && errno == EINTR) { /* retry */ }
+    while (sem_wait(s) == -1 && errno == EINTR) {  }
 }
 
 static inline void sem_post_n(sem_t *s, unsigned n) {

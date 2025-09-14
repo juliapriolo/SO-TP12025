@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
-
 #include "game_init.h"
 #include "shm.h"
 #include "config.h"
@@ -20,7 +19,6 @@
 GameShmData create_game_shm(unsigned width, unsigned height, unsigned player_count) {
 	GameShmData result = {0};
 	
-	/* crear shm estado y sync */
 	result.state_bytes = gamestate_bytes((uint16_t) width, (uint16_t) height);
 	result.state = (GameState*)shm_create(SHM_STATE_NAME, result.state_bytes, O_RDWR);
 	if (!result.state) {
@@ -31,7 +29,6 @@ GameShmData create_game_shm(unsigned width, unsigned height, unsigned player_cou
 	result.sync = (GameSync*)shm_create(SHM_SYNC_NAME, sizeof(GameSync), O_RDWR);
 	if (!result.sync) {
 		fprintf(stderr, "shm_create(/game_sync) failed\n");
-		// Limpiar el estado si falla la creación del sync
 		shm_unmap(result.state, result.state_bytes);
 		result.state = NULL;
 		return result;
@@ -39,7 +36,6 @@ GameShmData create_game_shm(unsigned width, unsigned height, unsigned player_cou
 
 	init_sync(result.sync, player_count);
 
-	/* inicializar estructuras */
 	writer_enter(result.sync);
 	memset(result.state, 0, result.state_bytes);
 	result.state->width = (unsigned short) width;
@@ -56,7 +52,6 @@ Master init_game_with_view(const Args *args, const GameShmData *shm_data) {
 	unsigned short px[MAX_PLAYERS], py[MAX_PLAYERS];
 	initial_positions(args->width, args->height, args->player_count, px, py);
 
-	/* crear estructura Master */
 	Master M = {
 		.args = *args,
 		.state = shm_data->state,
@@ -85,20 +80,17 @@ bool finalize_game_setup(Master *M) {
 		}
 	}
 
-	/* terminar si todos empiezan bloqueados */
 	unsigned initial_can_move = count_players_that_can_move(M->state);
 	if (initial_can_move == 0) {
 		M->state->finished = true;
 	}
 	writer_exit(M->sync);
 
-	/* primera notif a la vista para dibujar estado inicial */
 	notify_view_and_delay_if_any(M);
 
 	if (M->state->finished) {
 		set_finished_and_wake_all(M);
-		return true; // juego terminó temprano
+		return true; 
 	}
-	
-	return false; // juego continúa
+	return false;
 }

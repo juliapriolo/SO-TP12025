@@ -41,8 +41,6 @@ void init_board(GameState *st, unsigned w, unsigned h) {
     }
 }
 
-
-
 bool player_can_move(const GameState *st, unsigned player_idx) {
 	if (player_idx >= st->player_count)
 		return false;
@@ -200,7 +198,6 @@ FdSetInfo setup_fd_set(const Master *M) {
 TimeoutInfo calculate_timeout(uint64_t last_valid_ms, uint64_t timeout_ms) {
 	TimeoutInfo info;
 	
-	/* calcular cuánto falta para el timeout relativo a la ultima jugada valida */
 	struct timeval tv_now;
 	gettimeofday(&tv_now, NULL);
 	uint64_t now = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
@@ -222,73 +219,63 @@ TimeoutInfo calculate_timeout(uint64_t last_valid_ms, uint64_t timeout_ms) {
 }
 
 MoveProcessResult process_player_move(Master *M, unsigned player_idx) {
-	MoveProcessResult result = {0};
-	
-	int fd = M->players[player_idx].pipe_rd;
-	if (fd < 0) {
-		result.game_ended = false;
-		result.move_was_valid = false;
-		return result;
-	}
+    MoveProcessResult result = {0};
+    
+    int fd = M->players[player_idx].pipe_rd;
+    if (fd < 0) {
+        result.move_was_valid = false;
+        return result;
+    }
 
-	/* Leer exactamente 1 byte si hay, detectar EOF */
-	unsigned char move;
-	ssize_t rd = read(fd, &move, 1);
-	if (rd == 0) {
-		/* EOF -> jugador bloqueado */
-		writer_enter(M->sync);
-		M->state->players[player_idx].blocked = true;
-		writer_exit(M->sync);
-		close(M->players[player_idx].pipe_rd);
-		M->players[player_idx].pipe_rd = -1;
-		/* no hay "allow_next_send" porque ya no vive */
-		result.game_ended = false;
-		result.move_was_valid = false;
-		return result;
-	}
-	else if (rd < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			result.game_ended = false;
-			result.move_was_valid = false;
-			return result;
-		}
-		perror("read(pipe)");
-		/* tratamos como bloqueado igualmente */
-		writer_enter(M->sync);
-		M->state->players[player_idx].blocked = true;
-		writer_exit(M->sync);
-		close(M->players[player_idx].pipe_rd);
-		M->players[player_idx].pipe_rd = -1;
-		result.game_ended = false;
-		result.move_was_valid = false;
-		return result;
-	}
+    unsigned char move;
+    ssize_t rd = read(fd, &move, 1);
+    if (rd == 0) {
+        writer_enter(M->sync);
+        M->state->players[player_idx].blocked = true;
+        writer_exit(M->sync);
+        close(M->players[player_idx].pipe_rd);
+        M->players[player_idx].pipe_rd = -1;
+        result.move_was_valid = false;
+        return result;
+    }
+    else if (rd < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            result.move_was_valid = false;
+            return result;
+        }
+        perror("read(pipe)");
+        writer_enter(M->sync);
+        M->state->players[player_idx].blocked = true;
+        writer_exit(M->sync);
+        close(M->players[player_idx].pipe_rd);
+        M->players[player_idx].pipe_rd = -1;
+        result.move_was_valid = false;
+        return result;
+    }
 
-	bool was_valid;
-	bool all_blocked = false;
-	writer_enter(M->sync);
-	was_valid = apply_move_locked(M->state, player_idx, move);
-	unsigned players_that_can_move = count_players_that_can_move(M->state);
-	all_blocked = (players_that_can_move == 0);
-	writer_exit(M->sync);
+    bool was_valid;
+    bool all_blocked = false;
+    writer_enter(M->sync);
+    was_valid = apply_move_locked(M->state, player_idx, move);
+    unsigned players_that_can_move = count_players_that_can_move(M->state);
+    all_blocked = (players_that_can_move == 0);
+    writer_exit(M->sync);
 
-	if (was_valid) {
-		notify_view_and_delay_if_any(M);
-		struct timeval tv_now;
-		gettimeofday(&tv_now, NULL);
-		result.new_last_valid_ms = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
-		result.move_was_valid = true;
-	} else {
-		result.move_was_valid = false;
-	}
+    if (was_valid) {
+        notify_view_and_delay_if_any(M);
+        struct timeval tv_now;
+        gettimeofday(&tv_now, NULL);
+        result.new_last_valid_ms = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
+        result.move_was_valid = true;
+    } else {
+        result.move_was_valid = false;
+    }
 
-	if (all_blocked) {
-		result.game_ended = true;
-		return result;
-	}
+    if (all_blocked) {
+        result.game_ended = true;
+        return result;
+    }
 
-	allow_next_send(M, player_idx);
-	
-	result.game_ended = false;
-	return result;
+    allow_next_send(M, player_idx);
+    return result;
 }

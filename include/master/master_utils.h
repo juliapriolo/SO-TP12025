@@ -5,23 +5,21 @@
 #include "sync.h"
 
 
-/* parseo simple de argumentos */
 typedef struct {
 	unsigned width, height;
 	long delay_ms;
 	unsigned timeout_s;
 	unsigned seed_set;
 	unsigned seed;
-	const char *view_path; /* opcional */
+	const char *view_path; 
 	unsigned player_count;
 	const char *player_paths[MAX_PLAYERS];
 } Args;
 
-/* proceso de spawn */
 typedef struct {
 	pid_t pid;
-	int pipe_rd; /* lado de lectura que usa el master */
-	int pipe_wr; /* solo para cerrar en el master */
+	int pipe_rd; 
+	int pipe_wr; 
 	const char *path;
 } Child;
 
@@ -30,7 +28,7 @@ typedef struct {
 	GameState *state;
 	GameSync *sync;
 	size_t state_bytes;
-	Child view; /* opcional: pid != 0 si lanzado */
+	Child view; 
 	Child players[MAX_PLAYERS];
 } Master;
 

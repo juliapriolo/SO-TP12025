@@ -1,7 +1,5 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #define _POSIX_C_SOURCE 200809L
 #include "shm.h"
 #include "state.h"
@@ -18,7 +16,6 @@
 #include <sync_reader.h>
 #include <time.h> 
 #include <unistd.h>
-
 
 
 int main(int argc, char *argv[]) {
@@ -49,10 +46,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Ignorar SIGPIPE (por si muere el máster antes)
     signal(SIGPIPE, SIG_IGN);
 
-    // Esperar a que aparezca mi índice en players[]
     int self = -1;
     bool fin = false;
     while (self < 0 && !fin) {
@@ -77,7 +72,6 @@ int main(int argc, char *argv[]) {
 
     // Bucle principal
     while (!fin) {
-        // Esperar turno (G[i]), manejando EINTR
         int sem_res;
         do {
             sem_res = sem_wait(&sync->sem_player_can_send[self]);
@@ -88,7 +82,6 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        // Leer estado de forma sincronizada
         unsigned short x, y;
         int dir = -1;
         reader_enter(sync);

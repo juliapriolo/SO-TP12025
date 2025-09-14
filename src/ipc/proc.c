@@ -24,7 +24,7 @@ static void exec_child_with_dims(const char *path, unsigned w, unsigned h) {
 
 static void close_all_other_pipes_in_child(const Master *M, unsigned current_player) {
     for (unsigned k = 0; k < M->args.player_count; ++k) {
-        if (k == current_player) continue; // no cerrar nuestros propios pipes
+        if (k == current_player) continue; 
         
         if (M->players[k].pipe_rd >= 3)
             close(M->players[k].pipe_rd);
@@ -43,9 +43,8 @@ static void init_player_info(Master *M, unsigned i, unsigned short x, unsigned s
     p->x = x;
     p->y = y;
     p->blocked = false;
-    p->pid = 0; /* se setea tras fork */
+    p->pid = 0; 
 
-    /* marcar su celda inicial como capturada por -id (0..8). La celda inicial no otorga puntos. */
     int idx = (int) y * (int) M->args.width + (int) x;
     M->state->board[idx] = -(int) i;
 }
@@ -58,7 +57,6 @@ pid_t spawn_view(Master *M) {
     if (pid < 0)
         die("fork(view): %s", strerror(errno));
     if (pid == 0) {
-        /* hijo: exec view */
         exec_child_with_dims(M->args.view_path, M->args.width, M->args.height);
     }
     return pid;
@@ -79,14 +77,12 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
         M->players[i].pipe_wr = pipefd[1];
         M->players[i].path = M->args.player_paths[i];
 
-        /* inicializar jugador en el estado (nombre, pos, etc) */
         init_player_info(M, i, px[i], py[i]);
 
         pid_t pid = fork();
         if (pid < 0)
             die("fork(player): %s", strerror(errno));
         if (pid == 0) {
-            /* hijo (jugador): su stdout debe ser el lado de escritura del pipe */
             if (dup2(pipefd[1], STDOUT_FILENO) == -1) {
                 perror("dup2(player)");
                 _exit(127);
@@ -97,14 +93,11 @@ void spawn_players(Master *M, unsigned short px[MAX_PLAYERS], unsigned short py[
             close_all_other_pipes_in_child(M, i);
             exec_child_with_dims(M->args.player_paths[i], M->args.width, M->args.height);
         }
-        /* padre */
         M->players[i].pid = pid;
         M->state->players[i].pid = pid;
-        /* el master nunca escribe al jugador; cerramos el WR para poder detectar EOF si el jugador muere */
         close(M->players[i].pipe_wr);
         M->players[i].pipe_wr = -1;
 
-        /* hacer no bloqueante el read-end para usar select() seguro */
         int flags = fcntl(M->players[i].pipe_rd, F_GETFL, 0);
         (void) fcntl(M->players[i].pipe_rd, F_SETFL, flags | O_NONBLOCK);
     }

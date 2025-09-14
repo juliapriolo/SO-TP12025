@@ -91,6 +91,5 @@ int shm_delete(const char *name) {
 		perror("shm_unlink");
 		return -1;
 	}
-
 	return 0;
 }

@@ -14,7 +14,7 @@ void *shm_connect(const char *name, size_t size, int mode);
 // Hace unmap de la memoria (puntero y tamaño).
 int shm_unmap(void *addr, size_t size);
 
-// Elimina (unlink) la shared memory.
+// Elimina la shared memory.
 int shm_delete(const char *name);
 
 #endif // SO_TP12025_SHM_H
