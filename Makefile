@@ -47,14 +47,19 @@ MASTER_BIN := $(abspath $(BINDIR)/master)
 
 W ?= 10
 H ?= 10
-PLAYERS ?= 9   # cantidad de jugadores por defecto
+P ?= 9         # cantidad de jugadores por defecto
+
+# Parámetros adicionales del master
+D ?= 200       # delay entre movimientos en milisegundos
+T ?= 10        # timeout en segundos
+S ?=           # semilla para random (opcional, si no se especifica usa time(NULL))
 
 # Rutas absolutas a los binarios
 PLAYER_BIN := $(abspath $(BINDIR)/player)
 VIEW_BIN   := $(abspath $(BINDIR)/view)
 
 # genera: /abs/bin/player /abs/bin/player ... (N veces)
-PLAYER_LIST := $(foreach i,$(shell seq 1 $(PLAYERS)),$(PLAYER_BIN))
+PLAYER_LIST := $(foreach i,$(shell seq 1 $(P)),$(PLAYER_BIN))
 
 # Detectar arquitectura para ChompChamps
 ARCH := $(shell uname -m)
@@ -66,13 +71,13 @@ else
   CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  # fallback
 endif
 
-.PHONY: all clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm asan format help
-asan: deps
+.PHONY: debug clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm build format help
+build: deps
 	$(MAKE) clean
-	$(MAKE) SAN=1 all
+	$(MAKE) SAN=1 debug
 
 
-all: deps dirs view player master
+debug: deps dirs view player master
 
 view: $(BINDIR)/view
 player: $(BINDIR)/player
@@ -104,9 +109,12 @@ clean-shm:
 run-master: deps master view player
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
-	@echo "PLAYERS=$(PLAYERS)"
+	@echo "P=$(P)"
 	@echo "PLAYER_LIST=$(PLAYER_LIST)"
-	$(MASTER_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+	@echo "D=$(D)"
+	@echo "T=$(T)"
+	@echo "S=$(S)"
+	$(MASTER_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
 # Alias conveniente
 master-run: run-master
@@ -115,25 +123,31 @@ master-run: run-master
 run-chompchamps: deps view player
 	@echo "CHOMPCHAMPS=$(CHOMPCHAMPS_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
-	@echo "PLAYERS=$(PLAYERS)"
+	@echo "P=$(P)"
 	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	@echo "D=$(D)"
+	@echo "T=$(T)"
+	@echo "S=$(S)"
 	@echo "Arquitectura detectada: $(ARCH)"
-	$(CHOMPCHAMPS_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+	$(CHOMPCHAMPS_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
 # Ejecuta con valgrind usando nuestro master
 run-valgrind: deps master view player
 	@echo "Ejecutando con valgrind..."
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
-	@echo "PLAYERS=$(PLAYERS)"
+	@echo "P=$(P)"
 	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	@echo "D=$(D)"
+	@echo "T=$(T)"
+	@echo "S=$(S)"
 	valgrind --leak-check=full \
 	  --show-leak-kinds=all \
 	  --track-origins=yes \
 	  --track-fds=yes \
 	  --error-exitcode=1 \
 	  --trace-children=yes \
-	  $(MASTER_BIN) -w $(W) -h $(H) -v $(VIEW_BIN) -p $(PLAYER_LIST)
+	  $(MASTER_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
 FORMAT = clang-format
 FORMAT_FLAGS = -i
@@ -151,21 +165,25 @@ deps:
 # Ayuda - muestra todas las opciones disponibles
 help:
 	@echo "Opciones disponibles:"
-	@echo "  all              - Compilar proyecto sin asan"
-	@echo "  asan             - Compilar proyecto con AddressSanitizer"
+	@echo "  debug            - Compilar proyecto sin AddressSanitizer (para valgrind)"
+	@echo "  build            - Compilar proyecto con AddressSanitizer (uso normal)"
 	@echo "  run-master       - Ejecutar con binario master propio"
 	@echo "  run-chompchamps  - Ejecutar con ChompChamps (detecta arquitectura automáticamente)"
 	@echo "  run-valgrind     - Ejecutar con valgrind usando master propio"
 	@echo "  clean            - Limpiar archivos compilados y memoria compartida"
 	@echo "  clean-shm        - Limpiar solo memoria compartida"
-	@echo "  format           - Formatear código con clang-format"
 	@echo ""
 	@echo "Variables configurables:"
 	@echo "  W=10             - Ancho del tablero (default: 10)"
 	@echo "  H=10             - Alto del tablero (default: 10)"
-	@echo "  PLAYERS=9        - Número de jugadores (default: 9)"
+	@echo "  P=9              - Número de jugadores (default: 9)"
+	@echo "  D=200            - Delay entre movimientos en milisegundos (default: 200)"
+	@echo "  T=10             - Timeout del juego en segundos (default: 10)"
+	@echo "  S=               - Semilla para random (opcional, default: time(NULL))"
 	@echo ""
 	@echo "Ejemplos:"
-	@echo "  make run-master W=15 H=15 PLAYERS=5"
-	@echo "  make run-chompchamps"
-	@echo "  make run-valgrind"
+	@echo "  make run-master W=15 H=15 P=5"
+	@echo "  make run-master D=500 T=30"
+	@echo "  make run-master S=12345"
+	@echo "  make run-chompchamps D=100"
+	@echo "  make run-valgrind W=20 H=20 T=60"
