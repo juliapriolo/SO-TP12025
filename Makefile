@@ -66,8 +66,8 @@ else
   CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  
 endif
 
-.PHONY: debug no-view clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm build format help
-no-view: deps dirs player master
+.PHONY: debug clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm build format help
+
 build: deps
 	$(MAKE) clean
 	$(MAKE) SAN=1 debug
