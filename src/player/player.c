@@ -50,21 +50,17 @@ int main(int argc, char *argv[]) {
 
     int self = -1;
     bool fin = false;
-    while (self < 0 && !fin) {
-        reader_enter(sync);
-        self = find_self_index(state);
-        fin = state->finished;
-        reader_exit(sync);
-        if (self < 0 && !fin)
-            sleep_ms(1);
-    }
+    reader_enter(sync);
+    self = find_self_index(state);
+    fin = state->finished;
+    reader_exit(sync);
     if (fin) {
         shm_unmap(sync, sizeof(GameSync));
         shm_unmap(state, state_bytes);
         return 0;
     }
     if (self < 0) {
-        fprintf(stderr, "player: no encuentro mi índice en players[].\n");
+        fprintf(stderr, "player: no encuentro su índice en players[].\n");
         shm_unmap(sync, sizeof(GameSync));
         shm_unmap(state, state_bytes);
         return 1;
