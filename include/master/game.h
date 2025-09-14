@@ -8,6 +8,13 @@
 #include <sys/time.h>
 #include "state.h"
 #include "master_utils.h"
+#include "player_utils.h"
+#include "game.h"
+#include "directions.h"
+#include <errno.h>
+#include <unistd.h>
+#include "timing.h"
+
 
 typedef struct {
 	fd_set rfds;
