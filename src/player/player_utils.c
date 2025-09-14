@@ -19,7 +19,8 @@ static int count_future_moves(GameState *st, unsigned short x, unsigned short y)
         int nx = (int)x + dx[i];
         int ny = (int)y + dy[i];
         
-        if (nx >= 0 && ny >= 0 && nx < (int)st->width && ny < (int)st->height) {
+        // Usar la misma validación que el master
+        if (cell_in_bounds(st->width, st->height, nx, ny)) {
             int idx = ny * (int)st->width + nx;
             if (st->board[idx] > 0) count++;
         }
@@ -49,7 +50,7 @@ int pick_direction(GameState *st, unsigned short x, unsigned short y) {
         int nx = (int)x + dx[dir];
         int ny = (int)y + dy[dir];
         
-        if (nx < 0 || ny < 0 || nx >= (int)st->width || ny >= (int)st->height)
+        if (!cell_in_bounds(st->width, st->height, nx, ny))
             continue;
             
         int idx = ny * (int)st->width + nx;
@@ -76,6 +77,6 @@ int pick_direction(GameState *st, unsigned short x, unsigned short y) {
     if (best_dir != -1) {
         return best_dir;
     }
-   
+
     return fallback_dir;
 }
