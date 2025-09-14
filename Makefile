@@ -66,7 +66,21 @@ else
   CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  
 endif
 
-.PHONY: debug clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm build format help
+.PHONY: debug clean dirs view player master run-master run-master-noview master-run run-chompchamps run-valgrind clean-shm build format help build-noview debug-noview
+build-noview: deps
+	$(MAKE) clean
+	$(MAKE) SAN=1 debug-noview
+
+debug-noview: deps dirs player master
+# Ejecuta nuestro master sin la vista
+run-master-noview: deps master player
+	@echo "MASTER=$(MASTER_BIN)"
+	@echo "P=$(P)"
+	@echo "PLAYER_LIST=$(PLAYER_LIST)"
+	@echo "D=$(D)"
+	@echo "T=$(T)"
+	@echo "S=$(S)"
+	$(MASTER_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -p $(PLAYER_LIST)
 
 build: deps
 	$(MAKE) clean
