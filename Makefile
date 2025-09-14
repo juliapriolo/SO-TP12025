@@ -42,33 +42,28 @@ MASTER_SRC := $(SRCDIR)/master/master.c \
 
 MASTER_OBJ := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(MASTER_SRC))
 
-# Binario propio (compilado desde src/master.c)
+# Binario propio
 MASTER_BIN := $(abspath $(BINDIR)/master)
 
 W ?= 10
 H ?= 10
-P ?= 9         # cantidad de jugadores por defecto
-
-# Parámetros adicionales del master
+P ?= 1         # cantidad de jugadores por defecto
 D ?= 200       # delay entre movimientos en milisegundos
 T ?= 10        # timeout en segundos
-S ?=           # semilla para random (opcional, si no se especifica usa time(NULL))
+S ?=           # semilla para random 
 
-# Rutas absolutas a los binarios
 PLAYER_BIN := $(abspath $(BINDIR)/player)
 VIEW_BIN   := $(abspath $(BINDIR)/view)
 
-# genera: /abs/bin/player /abs/bin/player ... (N veces)
 PLAYER_LIST := $(foreach i,$(shell seq 1 $(P)),$(PLAYER_BIN))
 
-# Detectar arquitectura para ChompChamps
 ARCH := $(shell uname -m)
 ifeq ($(ARCH),x86_64)
   CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)
 else ifeq ($(ARCH),aarch64)
   CHOMPCHAMPS_BIN := $(abspath ChompChamps_arm64)
 else
-  CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  # fallback
+  CHOMPCHAMPS_BIN := $(abspath ChompChamps_amd64)  
 endif
 
 .PHONY: debug clean dirs view player master run-master master-run run-chompchamps run-valgrind clean-shm build format help
@@ -96,7 +91,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | dirs
 dirs:
 	@mkdir -p $(BINDIR) $(OBJDIR) $(OBJDIR)/master $(OBJDIR)/core $(OBJDIR)/player $(OBJDIR)/view $(OBJDIR)/ipc $(OBJDIR)/utils
 
-clean: clean-shm
+clean:
 	@$(RM) -r $(OBJDIR) $(BINDIR)/view $(BINDIR)/player $(BINDIR)/master $(BINDIR)/*.log
 	@echo "Limpio."
 
@@ -105,7 +100,7 @@ clean-shm:
 	@-rm -f /dev/shm/game_state /dev/shm/game_sync
 	@echo "Memoria compartida limpiada."
 
-# Ejecuta *nuestro* master con rutas ABS a view/player
+# Ejecuta nuestro master 
 run-master: deps master view player
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
@@ -116,10 +111,9 @@ run-master: deps master view player
 	@echo "S=$(S)"
 	$(MASTER_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
-# Alias conveniente
 master-run: run-master
 
-# Ejecuta con ChompChamps según la arquitectura
+# Ejecuta con ChompChamps
 run-chompchamps: deps view player
 	@echo "CHOMPCHAMPS=$(CHOMPCHAMPS_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
@@ -162,24 +156,23 @@ deps:
 	apt-get update
 	apt-get install -y libncurses5-dev libncursesw5-dev
 
-# Ayuda - muestra todas las opciones disponibles
 help:
 	@echo "Opciones disponibles:"
-	@echo "  debug            - Compilar proyecto sin AddressSanitizer (para valgrind)"
-	@echo "  build            - Compilar proyecto con AddressSanitizer (uso normal)"
+	@echo "  debug            - Compilar proyecto sin AddressSanitizer"
+	@echo "  build            - Compilar proyecto con AddressSanitizer"
 	@echo "  run-master       - Ejecutar con binario master propio"
-	@echo "  run-chompchamps  - Ejecutar con ChompChamps (detecta arquitectura automáticamente)"
-	@echo "  run-valgrind     - Ejecutar con valgrind usando master propio"
-	@echo "  clean            - Limpiar archivos compilados y memoria compartida"
+	@echo "  run-chompchamps  - Ejecutar con ChompChamps"
+	@echo "  run-valgrind     - Ejecutar con valgrind"
+	@echo "  clean            - Limpiar archivos compilados"
 	@echo "  clean-shm        - Limpiar solo memoria compartida"
 	@echo ""
 	@echo "Variables configurables:"
 	@echo "  W=10             - Ancho del tablero (default: 10)"
 	@echo "  H=10             - Alto del tablero (default: 10)"
-	@echo "  P=9              - Número de jugadores (default: 9)"
+	@echo "  P=9              - Número de jugadores (default: 1)"
 	@echo "  D=200            - Delay entre movimientos en milisegundos (default: 200)"
 	@echo "  T=10             - Timeout del juego en segundos (default: 10)"
-	@echo "  S=               - Semilla para random (opcional, default: time(NULL))"
+	@echo "  S=               - Semilla para random"
 	@echo ""
 	@echo "Ejemplos:"
 	@echo "  make run-master W=15 H=15 P=5"
