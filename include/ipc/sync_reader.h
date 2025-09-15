@@ -5,11 +5,9 @@
 #include <semaphore.h>
 
 static inline void reader_enter(GameSync *s) {
-	// C: molinete — bloquea nuevos lectores si un escritor quiere entrar
 	sem_wait(&s->sem_turnstile);
 	sem_post(&s->sem_turnstile);
 
-	// E/F/D: primer lector toma el estado
 	sem_wait(&s->sem_reader_mutex);
 	if (s->readers_count++ == 0)
 		sem_wait(&s->sem_state);
@@ -17,7 +15,6 @@ static inline void reader_enter(GameSync *s) {
 }
 
 static inline void reader_exit(GameSync *s) {
-	// E/F/D: último lector libera el estado
 	sem_wait(&s->sem_reader_mutex);
 	if (--s->readers_count == 0)
 		sem_post(&s->sem_state);

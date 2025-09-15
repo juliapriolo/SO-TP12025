@@ -32,7 +32,6 @@ int main(int argc, char *argv[]) {
 
 	size_t state_bytes = gamestate_bytes((uint16_t) w, (uint16_t) h);
 
-	// Conectarse a SHM
 	GameState *state = (GameState *) shm_connect("/game_state", state_bytes, O_RDONLY);
 	if (!state) {
 		perror("shm_connect(/game_state)");
@@ -65,7 +64,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	// Bucle principal
 	while (!fin) {
 		int sem_res;
 		do {

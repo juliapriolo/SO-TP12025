@@ -53,27 +53,25 @@ void finish_game_and_cleanup(Master *M, GameState *state, GameSync *sync, size_t
 
 	cleanup_master(M);
 
-	/* limpia memoria compartida */
 	shm_unmap(sync, sizeof(GameSync));
 	shm_unmap(state, state_bytes);
 
-	/* elimina archivos de memoria compartida del sistema */
 	shm_delete(SHM_SYNC_NAME);
 	shm_delete(SHM_STATE_NAME);
 }
 
 void cleanup_master(Master *M) {
-	/* Cerrar todos los file descriptors de jugadores */
+	// cerrar todos los file descriptors de jugadores
 	for (unsigned i = 0; i < M->args.player_count; ++i) {
 		close_fd_if_open(&M->players[i].pipe_rd);
 		close_fd_if_open(&M->players[i].pipe_wr);
 	}
 
-	/* Cerrar file descriptors de la vista*/
+	// cerrar file descriptors de la vista
 	close_fd_if_open(&M->view.pipe_rd);
 	close_fd_if_open(&M->view.pipe_wr);
 
-	/* Destruir todos los semáforos */
+	// destruir todos los semáforos 
 	if (M->sync) {
 		sem_destroy(&M->sync->sem_master_to_view);
 		sem_destroy(&M->sync->sem_view_to_master);

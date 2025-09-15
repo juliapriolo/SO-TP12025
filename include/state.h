@@ -30,7 +30,6 @@ typedef struct {
 	int board[];
 } GameState;
 
-// Helper para calcular bytes totales necesarios para mapear GameState
 static inline size_t gamestate_bytes(uint16_t w, uint16_t h) {
 	return sizeof(GameState) + (size_t) w * (size_t) h * sizeof(int32_t);
 }

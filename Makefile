@@ -72,7 +72,7 @@ build-noview: deps
 	$(MAKE) SAN=1 debug-noview
 
 debug-noview: deps dirs player master
-# Ejecuta nuestro master sin la vista
+# ejecuta nuestro master sin la vista
 run-master-noview: deps master player
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "P=$(P)"
@@ -115,7 +115,7 @@ clean-shm:
 	@-rm -f /dev/shm/game_state /dev/shm/game_sync
 	@echo "Memoria compartida limpiada."
 
-# Ejecuta nuestro master 
+# ejecuta nuestro master
 run-master: deps master view player
 	@echo "MASTER=$(MASTER_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
@@ -128,7 +128,7 @@ run-master: deps master view player
 
 master-run: run-master
 
-# Ejecuta con ChompChamps
+# ejecuta con ChompChamps
 run-chompchamps: deps view player
 	@echo "CHOMPCHAMPS=$(CHOMPCHAMPS_BIN)"
 	@echo "VIEW  =$(VIEW_BIN)"
@@ -140,7 +140,7 @@ run-chompchamps: deps view player
 	@echo "Arquitectura detectada: $(ARCH)"
 	$(CHOMPCHAMPS_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
-# Ejecuta con valgrind usando nuestro master
+# ejecuta con valgrind usando nuestro master
 run-valgrind: deps master view player
 	@echo "Ejecutando con valgrind..."
 	@echo "MASTER=$(MASTER_BIN)"
@@ -158,7 +158,7 @@ run-valgrind: deps master view player
 	  --trace-children=yes \
 	  $(MASTER_BIN) -w $(W) -h $(H) -d $(D) -t $(T) $(if $(S),-s $(S),) -v $(VIEW_BIN) -p $(PLAYER_LIST)
 
-# Ejecuta con valgrind sin view
+# ejecuta con valgrind sin view
 run-valgrind-noview: deps master player
 	@echo "Ejecutando con valgrind (sin view)..."
 	@echo "MASTER=$(MASTER_BIN)"

@@ -19,7 +19,6 @@ static int count_future_moves(GameState *st, unsigned short x, unsigned short y)
 		int nx = (int) x + dx[i];
 		int ny = (int) y + dy[i];
 
-		// Usar la misma validación que el master
 		if (cell_in_bounds(st->width, st->height, nx, ny)) {
 			int idx = ny * (int) st->width + nx;
 			if (st->board[idx] > 0)

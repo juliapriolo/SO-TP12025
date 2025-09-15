@@ -68,8 +68,7 @@ Master init_game_with_view(const Args *args, const GameShmData *shm_data) {
 	return M;
 }
 
-// Función para finalizar la inicialización del juego
-// Retorna true si el juego terminó temprano (todos bloqueados), false si continúa
+// función para finalizar la inicialización del juego retorna true si el juego terminó temprano (todos bloqueados), false si continúa
 bool finalize_game_setup(Master *M) {
 	writer_enter(M->sync);
 	for (unsigned i = 0; i < M->args.player_count; ++i) {
