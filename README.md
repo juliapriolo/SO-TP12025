@@ -38,7 +38,7 @@ make debug
 make debug-noview
 ```
 
-Para más información sobre los comandos disponibles o los parámetros configurables, podés ejecutar:
+Para más información sobre los comandos disponibles o los parámetros configurables, puede ejecutar:
 
 ```
 make help
