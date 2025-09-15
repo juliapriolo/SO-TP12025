@@ -5,6 +5,13 @@ En este trabajo práctico se expone el desarrollo de un sistema denominado Chomp
 
 ## Compilación
 
+**Recomendación:** Antes de compilar, se sugiere ejecutar:
+
+```
+make clean
+```
+para asegurarse de que no queden archivos de compilaciones anteriores.
+
 Para compilar el proyecto, existen diferentes comandos según si se desea incluir la vista (view) o no, y si se requiere compilación normal o para debug (valgrind).
 
 ### Compilación completa (con vista)
