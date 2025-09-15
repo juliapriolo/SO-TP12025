@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 		int last_row = 2;
 		if (!headless) {
 			print_board_flat(state, trail, &last_row);
-			last_row = print_players(state, last_row); 
+			last_row = print_players(state, last_row);
 		}
 		done = state->finished ? 1 : 0;
 		reader_exit(sync);

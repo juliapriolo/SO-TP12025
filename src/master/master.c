@@ -15,23 +15,22 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "shm.h"
 #include "config.h"
+#include "master_utils.h"
+#include "shm.h"
 #include "state.h"
 #include "sync.h"
-#include "master_utils.h"
 #include "sync_reader.h"
 #include "sync_writer.h"
 
 #include "args.h"
 #include "cleanup.h"
-#include "timing.h"
-#include "sync_init.h"
 #include "game.h"
 #include "game_init.h"
 #include "notify.h"
 #include "proc.h"
-
+#include "sync_init.h"
+#include "timing.h"
 
 int main(int argc, char **argv) {
 	signal(SIGPIPE, SIG_IGN);
@@ -45,9 +44,9 @@ int main(int argc, char **argv) {
 	if (!shm_data.state || !shm_data.sync) {
 		die("Failed to create game shared memory");
 	}
-	
+
 	Master M = init_game_with_view(&args, &shm_data);
-	
+
 	GameState *state = M.state;
 	GameSync *sync = M.sync;
 	size_t state_bytes = M.state_bytes;
@@ -59,7 +58,7 @@ int main(int argc, char **argv) {
 
 	struct timeval tv_now;
 	gettimeofday(&tv_now, NULL);
-	uint64_t last_valid_ms = (uint64_t)tv_now.tv_sec * 1000ULL + (uint64_t)tv_now.tv_usec / 1000ULL;
+	uint64_t last_valid_ms = (uint64_t) tv_now.tv_sec * 1000ULL + (uint64_t) tv_now.tv_usec / 1000ULL;
 	unsigned rr_next = 0;
 
 	const uint64_t timeout_ms = (uint64_t) args.timeout_s * 1000ULL;
@@ -99,7 +98,7 @@ int main(int argc, char **argv) {
 				continue;
 
 			MoveProcessResult move_result = process_player_move(&M, i);
-			
+
 			if (move_result.move_was_valid) {
 				last_valid_ms = move_result.new_last_valid_ms;
 			}

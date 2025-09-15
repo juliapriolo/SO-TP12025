@@ -25,7 +25,7 @@ typedef struct {
 	unsigned short width;
 	unsigned short height;
 	unsigned int player_count;
-    PlayerInfo players[MAX_PLAYERS];
+	PlayerInfo players[MAX_PLAYERS];
 	volatile bool finished;
 	int board[];
 } GameState;

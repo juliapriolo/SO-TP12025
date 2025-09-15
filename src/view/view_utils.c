@@ -20,10 +20,10 @@ void print_board_flat(const GameState *s, const uint8_t *trail_idx, int *out_las
 
 	print_board_header(s);
 	print_board_top_border(s);
-	int last_row = print_board_rows(s, trail_idx); 
+	int last_row = print_board_rows(s, trail_idx);
 
 	if (out_last_row) {
-		*out_last_row = last_row; 
+		*out_last_row = last_row;
 	}
 }
 
@@ -57,7 +57,7 @@ int print_players(const GameState *s, int board_last_row) {
 		}
 		row++;
 	}
-	return row; 
+	return row;
 }
 
 int print_final_summary(const GameState *s, int start_row) {
@@ -88,7 +88,7 @@ static int player_text_pair(unsigned i) {
 }
 static int player_bg_pair(unsigned i) {
 	return 20 + (int) (i % 9);
-} 
+}
 
 int player_at(const GameState *s, unsigned x, unsigned y) {
 	for (unsigned i = 0; i < s->player_count && i < MAX_PLAYERS; ++i) {
@@ -151,7 +151,7 @@ static void print_board_top_border(const GameState *s) {
 	mvaddch(row, col++, ACS_ULCORNER);
 	for (unsigned x = 0; x < s->width; ++x) {
 		for (int i = 0; i < CELL_INNER_WIDTH; i++) {
-			mvaddch(row, col++, ACS_HLINE); 
+			mvaddch(row, col++, ACS_HLINE);
 		}
 		mvaddch(row, col++, (x == (unsigned) (s->width - 1)) ? ACS_URCORNER : ACS_TTEE);
 	}
@@ -199,7 +199,7 @@ static void print_board_row_separator(const GameState *s, unsigned y, int row) {
 }
 
 static int print_board_rows(const GameState *s, const uint8_t *trail_idx) {
-	int row = 3; 
+	int row = 3;
 
 	for (unsigned y = 0; y < s->height; ++y) {
 		mvaddch(row, 0, ACS_VLINE);
@@ -248,9 +248,9 @@ int initialize_ncurses(SCREEN **scr, int *ncurses_initialized, int *headless) {
 }
 
 void setup_ncurses_colors(void) {
-	init_pair(1, COLOR_CYAN, -1);  
-	init_pair(2, COLOR_WHITE, -1); 
-	init_pair(4, COLOR_RED, -1);   
+	init_pair(1, COLOR_CYAN, -1);
+	init_pair(2, COLOR_WHITE, -1);
+	init_pair(4, COLOR_RED, -1);
 	init_pair(10, COLOR_CYAN, -1);
 	init_pair(11, COLOR_MAGENTA, -1);
 	init_pair(12, COLOR_YELLOW, -1);
@@ -261,13 +261,11 @@ void setup_ncurses_colors(void) {
 	init_pair(17, COLOR_BLACK, -1);
 	init_pair(18, COLOR_BLACK, -1);
 
-    short bg_colors[9] = {
-        COLOR_CYAN, COLOR_MAGENTA, COLOR_YELLOW, COLOR_GREEN,
-        COLOR_BLUE, COLOR_WHITE, COLOR_RED, COLOR_BLACK, COLOR_BLACK
-    };
-    for (int i = 0; i < 9; ++i) {
-        init_pair((short)(20 + i), -1, (short)bg_colors[i]);
-    }
+	short bg_colors[9] = {COLOR_CYAN,  COLOR_MAGENTA, COLOR_YELLOW, COLOR_GREEN, COLOR_BLUE,
+						  COLOR_WHITE, COLOR_RED,	  COLOR_BLACK,	COLOR_BLACK};
+	for (int i = 0; i < 9; ++i) {
+		init_pair((short) (20 + i), -1, (short) bg_colors[i]);
+	}
 }
 
 void render_final(const GameState *state, uint8_t *trail, int headless) {
